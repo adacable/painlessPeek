@@ -1,0 +1,37 @@
+#!/usr/bin/env ruby
+
+compile '/**/*.html' do
+  layout '/default.*'
+
+  write item.identifier.to_s
+end
+
+compile '/**/*.template.json' do
+  filter :erb
+  write @item.identifier.without_ext.split(".")[0] + '.json'
+end
+
+compile '/extension/filters/**/script.js' do
+  write '/extension/filters/contentScripts/' + @item.identifier.without_ext.split('/')[3] + '.js'
+end
+
+# This is an example rule that matches Markdown (.md) files, and filters them
+# using the :kramdown filter. It is commented out by default, because kramdown
+# is not bundled with Nanoc or Ruby.
+#
+#compile '/**/*.md' do
+#  filter :kramdown
+#  layout '/default.*'
+#
+#  if item.identifier =~ '**/index.*'
+#    write item.identifier.to_s
+#  else
+#    write item.identifier.without_ext + '/index.html'
+#  end
+#end
+
+compile '/**/*' do
+  write item.identifier.to_s
+end
+
+layout '/**/*', :erb
