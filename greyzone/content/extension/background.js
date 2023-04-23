@@ -1,21 +1,10 @@
 console.log("background.js loaded");
-filters
 
 var defaultSelectors = [
     {
         "name": "images",
         "selector": "img",
         "url": "*",
-        "filters": []
-    },{
-        "name": "videos",
-        "selector": "video",
-        "url": "*",
-        "filters": []
-    },{
-        "name": "images on t.me",
-        "selector": "img",
-        "url": "t.me/*",
         "filters": []
     }
 ]

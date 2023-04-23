@@ -8,15 +8,18 @@ var defaultSelectors = [
         "name": "videos",
         "selector": "video",
         "url": "*",
+        "filters": []
     },{
         "name": "images on t.me",
-        "selector": "img",
+        "selector": "tgme_widget_message_photo_wrap",
         "url": "t.me/*",
+        "filters": []
     }
 ]
 var defaultFilters = [{
     "name": "greyscale",
-    options: {
+    "description": "Make the image black and white",
+    'options': {
         "enabled": {
             'value': false,
             'type': "checkbox",
@@ -26,7 +29,8 @@ var defaultFilters = [{
 
 }, {
     "name": "blur",
-    options: {
+    "description": "Blur the image",
+    'options': {
         "enabled": {
             'value': false,
             'type': "checkbox",
@@ -35,52 +39,34 @@ var defaultFilters = [{
     }
 },{
     "name": "reveal",
-    options: {
+    "description": "Reveal the image on hover",
+    'options': {
         "enabled": {
             'value': false,
             'type': "checkbox",
-            "description": "Enable reveal filter"
+            "description": "reveal the image slowly on hover"
         }
     }
 
 },{
     "name": "hue-rotate",
-    options: {
+    "description": "Rotate the hue of the image, to make colours appear different",
+    'options': {
         "enabled": {
             'value': false,
             'type': "checkbox",
             "description": "Enable hue-rotate filter"
-        },
-        "angle": {
-            'value': 90,
-            'type': "range",
-            'max': 360,
-            'min': 0,
-            "description": "The angle of the hue-rotate filter"
         }
     }
 },{
     "name": "letterbox",
-    options: {
+    "description": "Reveal a small rectangle of the image on hover",
+    'options': {
         "enabled": {
             'value': false,
             'type': "checkbox",
             "description": "Enable letterbox filter"
         },
-        "rect-width": {
-            'value': 20,
-            'type': "range",
-            'max': 100,
-            'min': 0,
-            "description": "The width of the unfiltered letterbox, as a percentage"
-        },
-        "rect-height": {
-            'value': 20,
-            'type': "range",
-            'max': 100,
-            'min': 0,
-            "description": "The height of the unfiltered letterbox, as a percentage"
-        }
     }
 }
 ];
@@ -122,6 +108,7 @@ function addFilters(filters,selector,selectordiv) {
     return selectordiv;
 }
 function makeFilterDiv(filter) {
+    console.log(filter);
     form = document.createElement("form");
     h3 = document.createElement("h3");
     h3.innerHTML = filter["name"];
@@ -129,11 +116,11 @@ function makeFilterDiv(filter) {
     form.className = "filter";
     form.id = filter["name"]
     options = filter["options"]
-    if (options["enabled"] != undefined) {
-        options["enabled"]["value"] = false;
-    }
-    isEnabled = options["enabled"]["value"];
+    form.appendChild(makeOptionDiv(options["enabled"],"enabled"));
     for (var key in options) {
+        if (key == "enabled") {
+            continue;
+        }
         option = options[key];
         optionDiv = makeOptionDiv(option,key);
         form.appendChild(optionDiv);
@@ -162,6 +149,11 @@ function makeOptionDiv(option,optionName){
     }
     input.addEventListener("change", updateSelectors);
     div.appendChild(input);
+    if (option["description"]) {
+        p = document.createElement("p");
+        p.innerHTML = option["description"];
+        div.appendChild(p);
+    }
     return div;
 }
 
@@ -195,11 +187,8 @@ function updateSelectors() {
     })
 }
 
-
-
 chrome.storage.sync.get('selectors').then((result) => {
     console.log(result["selectors"])
     sels = result["selectors"]
     makeUI(sels);
 })
-

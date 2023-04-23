@@ -12,36 +12,37 @@ filters = {
     "letterbox": {
         "add": function(element, options) {
             //wrap image in outer
-            image = element
-            var outer = document.createElement('div');
-            outer.classList.add('greyzone-filter');
-            image.parentNode.insertBefore(outer, image);
-            outer.appendChild(image);
+            var outer = element;
+            image = element.querySelector("img");
             //create letterbox
-            var letterbox = document.createElement('div');
+            var letterbox = element.querySelector(".greyzone-filter");
             letterbox.classList.add('letterbox');
             //set iptions
-            letterbox.style.setProperty('--rect-height', options["rect-height"]);
-            letterbox.style.setProperty('--rect-width', options["rect-width"]);
-            outer.appendChild(letterbox);
+            outer.addEventListener('mousemove', function(e) {
+                moveLetterbox(e,letterbox,outer);
+            });
         },
         "remove": function(element) {
-            image = element
-            wrapper = element.parentNode;
-            orignialParent = wrapper.parentNode;
-            orignialParent.insertBefore(image, wrapper);
-            orignialParent.removeChild(wrapper);
-        },
-        "update": function(element, options) {
-            image = element
-            wrapper = element.parentNode;
-            orignialParent = wrapper.parentNode;
-            orignialParent.insertBefore(image, wrapper);
-            orignialParent.removeChild(wrapper);
+            element.removeEventListener('mousemove', moveLetterbox);
+            letterbox = element.querySelector(".greyzone-filter");
+            letterbox.classList.remove('letterbox');
         }
     }
 };
-
+function moveLetterbox(e,letterbox,outer) {
+    //make letterbox follow mouse if over image
+    offset = outer.getBoundingClientRect();
+    leftOffset = offset.left;
+    topOffset = offset.top;
+    boxWidth = outer.offsetWidth;
+    boxHeight = outer.offsetHeight;
+    //fix mouse in cenre
+    xpos = e.clientX - leftOffset - (3*boxWidth / 2);
+    ypos = e.clientY - topOffset - (3*boxHeight / 2);
+    //move letterbox
+    letterbox.style.left = xpos + 'px';
+    letterbox.style.top = ypos + 'px';
+}
 
 function updateSelector(selector) {
     elements = document.querySelectorAll(selector.selector);
@@ -60,11 +61,7 @@ function updateSelector(selector) {
             filterName = filterOpts["name"];
             opts = filterOpts["options"];
             filter = filters[filterName];
-            if (filter.add != undefined) {
-                filter.add(wrapper, opts);
-            }else{
-                updateFilter(wrapper, filterName, opts);
-            }
+            updateFilter(wrapper, filterName, opts);
         })
     })
 };
@@ -76,55 +73,55 @@ function wrapElement(element) {
     element.parentNode.insertBefore(wrapper, element);
     wrapper.appendChild(element);
     filtersDiv = document.createElement('div');
-    filtersDiv.classList.add('greyzone-filters');
-    for (let filterName in filters) {
-        filterDiv = document.createElement('div');
-        filterDiv.classList.add(filterName);
-        filterDiv.classList.add('greyzone-filter');
-        filtersDiv.appendChild(filterDiv);
-    };
+    filtersDiv.classList.add('greyzone-filter');
     wrapper.appendChild(filtersDiv);
     return wrapper;
 }
 
-function addFilter(element, filterName, options) {
-    filter = filters[filterName];
-    wrapper = wrapElement(element)
-    filter.add(wrapper, options);
-}
 function updateFilter(wrapper,filterName, options) {
     filter = filters[filterName];
     if (filter.update != undefined) {
         filter.update(wrapper, options);
     }else{
-        filterDiv = wrapper.querySelector('.'+filterName);
-        console.log(filterDiv);
+        filterDiv = wrapper.querySelector('.greyzone-filter');
         for (let [optionName, optionValue] of Object.entries(options)) {
-            val =optionValue["value"];
-            console.log(val);
-            filterDiv.setAttribute("data-" + optionName,val);
+            val = optionValue["value"];
             if (optionName == "enabled") {
                 if (val == true) {
-                    filterDiv.addClass("enabled");
+                    if (!(filterDiv.classList.contains(filterName))) {
+                        addFilter(wrapper, filterName);
+                    }
                 }else{
-                    filterDiv.removeClass("enabled");
+                    if (filterDiv.classList.contains(filterName)) {
+                        removeFilter(wrapper, filterName);
+                    }
                 }
+            }else{
+                filterDiv.setAttribute("data-" + optionName,val);
             }
         }
     }
 }
-function removeFilter(wrapper, filterName) {
+function  addFilter(wrapper, filterName){
     filter = filters[filterName];
-    wrapper = element.parentNode;
-    if (filter.remove != undefined) {
-        filter.remove(wrapper);
+    console.log("adding filter: " + filterName);
+    filterDiv = wrapper.querySelector('.greyzone-filter');
+    if ('add' in filter) {
+        filter.add(wrapper);
     }else{
-        filterDiv = wrapper.querySelector('.'+filterName);
-        filterDiv.style.display = "none";
+        filterDiv.classList.add(filterName);
     }
 }
-
-
+function removeFilter(wrapper, filterName) {
+    filter = filters[filterName];
+    console.log("removing filter: " + filterName);
+    filterDiv = wrapper.querySelector('.greyzone-filter');
+    if ('remove' in filter) {
+        filter.remove(wrapper);
+    }else{
+        filterDiv.classList.remove(filterName);
+    }
+}
 
 function updateSelectors(newSelectors) {
     changedSelectors = [];
@@ -134,15 +131,15 @@ function updateSelectors(newSelectors) {
             changedSelectors.push(newSelector);
         }       
     });
-    changedSelectors.forEach((changedSelector) => {
-        updateSelector(changedSelector);
-    });
+    if (changedSelectors.length != 0) {
+        console.log("changed selectors: " + changedSelectors);
+        console.log(newSelectors);
+        changedSelectors.forEach((changedSelector) => {
+            updateSelector(changedSelector);
+        });
+    }
     currentSelectors = newSelectors;
 }
-
-
-
-
 
 //run on selectors change
 currentSelectors = {};
@@ -169,37 +166,38 @@ style.type = 'text/css';
 style.innerHTML = `
 .greyzone-filter-wrapper{
     position: relative;
+    overflow: hidden;
+    width: fit-content;
+    height: fit-content;
     }
-
-.greyzone-filters{
+.greyzone-filter{
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-}
-.greyzone-filters .greyzone-filter{
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-}
-.greyzone-filter.greyscale.enabled{
+    top: -100%;
+    left: -100%;
+    width: 300vh;
+    height: 300vh;
+    }
+.greyzone-filter.greyscale{
     backdrop-filter: grayscale(100%);
-}
-.greyzone-filters .blur .enabled {
-    backdrop-filter: blur(20px) !important;
     }
-.greyzone-filters .letterbox .enabled {
+.greyzone-filter.blur {
+    backdrop-filter: blur(20px);
+    }
+.greyzone-filter.blur.greyscale {
+    backdrop-filter: blur(20px) grayscale(100%);
+    }
+.greyzone-filter.hue-rotate {
+    backdrop-filter:hue-rotate(90deg);
+    }
+.greyzone-filter.letterbox{
     position: absolute;
     top: 0;
     left: 0;
-    width:200vh;
-    height:200vh;
-    --rect-height: 10px;
-    --rect-width: 100%;
-      clip-path: polygon( evenodd,
+    width:300%;
+    height:300%;
+    --rect-height: 5%;
+    --rect-width: 5%;
+    clip-path: polygon( evenodd,
     /* outer rect */
     0 0, /* top - left */
     100% 0, /* top - right */
@@ -216,11 +214,19 @@ style.innerHTML = `
     calc(50% - var(--rect-width)) calc(50% + var(--rect-height)),
     calc(50% - var(--rect-width)) calc(50% - var(--rect-height))
     );
-    backdrop-filter: blur(10px);
 }
+
+.greyzone-filters.letterbox:hover{
+    cursor: none;
+}
+.greyzone-filter.reveal{
+    transition: backdrop-filter 5s;
+}
+.greyzone-filter.reveal:hover {
+    backdrop-filter: none!important;
+}
+
 `
-b = `
-.greyzone-filters  .greyscale.blur {filter: blur(20px) saturate(0) !important} 
-.greyzone-filters   .reveal:hover {filter: none!important;}
-.greyzone-filters   .hue-rotate {filter:hue-rotate(90deg);}`
+
+
 body.appendChild(style);
