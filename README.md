@@ -1,4 +1,4 @@
-# Painless peak
+# Painless peek
 
 ## Team Members
 Ada Cable

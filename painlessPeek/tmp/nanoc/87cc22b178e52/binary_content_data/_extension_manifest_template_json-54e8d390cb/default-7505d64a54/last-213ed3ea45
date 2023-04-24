@@ -1,0 +1,16 @@
+{
+    "manifest_version": 3,
+    "name": "Greyzone",
+    "version": "0.0.1",
+    "default_locale": "en",
+    "description": "<%= description %>",
+    "permissions": [
+        "scripting",
+        "storage",
+        "tabs",
+        "contextMenus",
+        "http://*/*",
+        "https://*/*"
+    ],
+    "homepage_url": "https://greyzone.github.io"
+}

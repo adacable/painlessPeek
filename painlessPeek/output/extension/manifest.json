@@ -1,0 +1,31 @@
+{
+    "manifest_version": 3,
+    "name": "Greyzone",
+    "version": "0.0.1",
+    "description": "An extension to make it easier to avoid vicarious trauma while doing OSINT work",
+    "permissions": [
+        "scripting",
+        "activeTab",
+        "storage",
+        "tabs",
+        "contextMenus",
+        "http://*/*",
+        "https://*/*"
+    ],
+    "background": {
+        "service_worker": "background.js",
+        "type": "module"
+    },
+    "homepage_url": "https://greyzone.github.io",
+    "action": {
+        "default_title": "GreyZone",
+        "default_popup": "popup.html",
+        "options_page": "options.html"
+    },
+    "content_scripts":[
+        {
+          "matches": ["http://*/*", "https://*/*"],
+          "js": ["content_all.js"]
+        }
+    ]
+}
