@@ -12,7 +12,7 @@ A crx chrome extension is available in the repository, a web store link will be 
 
 ## Roadmap
 - [x] Initial demo
-- [ ] Rename
+- [x] Rename
 - [ ] Fix background image bug
 - [ ] remove custom selector demo
 - [ ] Refactor to allow modular filters.
