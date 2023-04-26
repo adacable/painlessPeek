@@ -9,6 +9,6 @@ prune:
 data_sources:
   - type: filesystem
     encoding: utf-8
-name: 'Greyzone'
+name: 'Painless peek'
 description: 'An extension to make it easier to avoid vicarious trauma while doing OSINT work'
-url: 'https://greyzone.github.io'
+url: 'https://painlesspeek.github.io'
