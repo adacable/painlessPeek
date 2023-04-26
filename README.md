@@ -1,4 +1,4 @@
-# Greyzone
+# Painless peek
 
 ## Team Members
 Ada Cable
@@ -9,8 +9,6 @@ A browser extension to make it easier to more safley view traumatic imagery.
 It can apply various filters, from a blur or a greyscale to colour shifts, to artbitrary selectors- At the moment images, but it's easy to format it onto other targets.
 
 Extra filters as compared to other tools for bluring images are useful, but the best option is the "letterbox" filter, which allows you to view part of an image without filters while leaving the rest filtered- So you can inspect the detail on a building while leaving bodies in the foreground blured, or colourshifted.
-
-With apologies for the terrible pun name, it made images grey. I'd appreciate alternate suggestions.
 
 ## Installation
 
