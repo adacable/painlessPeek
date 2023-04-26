@@ -11,7 +11,7 @@ Extra filters as compared to other tools for bluring images are useful, but the 
 A crx chrome extension is available in the repository, a web store link will be available when we're at a reliable background image implementation(see below) as having the extension fail unpredictably is dangerous. 
 
 ## Roadmap
-- [ ] Initial demo
+- [x] Initial demo
 - [ ] Rename
 - [ ] Fix background image bug
 - [ ] remove custom selector demo
