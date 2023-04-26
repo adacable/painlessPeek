@@ -1,18 +1,24 @@
 # Painless peek
 
-## Team Members
-Ada Cable
-
-## Tool Description
-A browser extension to make it easier to more safley view traumatic imagery. 
+Painless Peek is a browser extension to make it easier to more safley view traumatic imagery. 
 
 It can apply various filters, from a blur or a greyscale to colour shifts, to artbitrary selectors- At the moment images, but it's easy to format it onto other targets.
 
-Extra filters as compared to other tools for bluring images are useful, but the best option is the "letterbox" filter, which allows you to view part of an image without filters while leaving the rest filtered- So you can inspect the detail on a building while leaving bodies in the foreground blured, or colourshifted.
+Extra filters as compared to other tools for bluring images are useful, but the best option is the "letterbox" filter, which allows you to view part of an image without filters while leaving the rest filtered- So you can inspect the detail on a building while leaving bodies in the foreground blured. 
 
 ## Installation
 
-A crx chrome extension is available in the repository, but the user friendly way to install it is via the chrome web store(or firefox web store). However, this is taking time- so for now, you can install it manually.
+A crx chrome extension is available in the repository, an 
+
+## Roadmap
+- [ ] Initial demo
+- [ ] Rename
+- [ ] Fix background image bug
+- [ ] remove custom selector demo
+- [ ] Refactor to allow modular filters.
+- [ ] Add to chrome/firefox web store
+- [ ] Implement custom selectors properly
+- [ ] UI to make custom selectors
 
 ## Usage
 A popup sits in the top left corner: it allows you to apply various filters to the page, targeting different selectors. 
