@@ -22,6 +22,9 @@
         "default_popup": "popup.html",
         "options_page": "options.html"
     },
+    "icons": {
+        "128": "icon.png"
+    },
     "content_scripts":[
         {
           "matches": ["http://*/*", "https://*/*"],
