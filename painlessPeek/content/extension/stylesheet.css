@@ -1,5 +1,32 @@
-#popup {
-    min-width: 300px;
+#main {
+    min-width: 200px;
     padding:2em;
+    font-size: 16px;
+}
+.filter{
+    margin-top: 0.2rem;
 }
 
+.peeks{
+    display:inline-block;
+    margin-left: 2.7rem;
+}
+.option{
+    float:right;
+}
+h2{
+    display:inline-block;
+    margin: 0.1em 0 0 0;
+}
+h3{
+    display:inline-block;
+    margin: 0.1em 0 0 0;
+    font-weight:normal;
+    margin-top:0;
+}
+.option.enabled{
+    display:inline-block;
+}
+.option label.enabled{
+    display:none;
+}

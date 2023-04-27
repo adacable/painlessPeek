@@ -1,4 +1,12 @@
 console.log("initiated content_all.js");
+function getImages() {
+    standard = document.getElementsByTagName("img");
+    //get images with style=background-image
+    bg = document.querySelectorAll("[style*='background-image']");
+    //join lists
+    images = Array.prototype.slice.call(standard).concat(Array.prototype.slice.call(bg));
+    return images;
+}
 
 filters = {
     "greyscale": {
@@ -15,7 +23,7 @@ filters = {
             var outer = element;
             image = element.querySelector("img");
             //create letterbox
-            var letterbox = element.querySelector(".greyzone-filter");
+            var letterbox = element.querySelector(".painlessPeek-filter");
             letterbox.classList.add('letterbox');
             //set iptions
             outer.addEventListener('mousemove', function(e) {
@@ -24,7 +32,7 @@ filters = {
         },
         "remove": function(element) {
             element.removeEventListener('mousemove', moveLetterbox);
-            letterbox = element.querySelector(".greyzone-filter");
+            letterbox = element.querySelector(".painlessPeek-filter");
             letterbox.classList.remove('letterbox');
         }
     }
@@ -45,11 +53,11 @@ function moveLetterbox(e,letterbox,outer) {
 }
 
 function updateSelector(selector) {
-    elements = document.querySelectorAll(selector.selector);
+    elements = getImages();
     wrappers = []
     elements.forEach((element) => {
-        //check if wrapped by greyzone
-        if (element.parentNode.classList.contains("greyzone-filter-wrapper")) {
+        //check if wrapped by painlessPeek
+        if (element.parentNode.classList.contains("painlessPeek-filter-wrapper")) {
             wrappers.push(element.parentNode);
         }else{
             wrapper = wrapElement(element);
@@ -67,13 +75,13 @@ function updateSelector(selector) {
 };
 
 function wrapElement(element) {
-    //wrap image in .greyzone-filter
+    //wrap image in .painlessPeek-filter
     var wrapper = document.createElement('div');
-    wrapper.classList.add('greyzone-filter-wrapper');
+    wrapper.classList.add('painlessPeek-filter-wrapper');
     element.parentNode.insertBefore(wrapper, element);
     wrapper.appendChild(element);
     filtersDiv = document.createElement('div');
-    filtersDiv.classList.add('greyzone-filter');
+    filtersDiv.classList.add('painlessPeek-filter');
     wrapper.appendChild(filtersDiv);
     return wrapper;
 }
@@ -83,7 +91,7 @@ function updateFilter(wrapper,filterName, options) {
     if (filter.update != undefined) {
         filter.update(wrapper, options);
     }else{
-        filterDiv = wrapper.querySelector('.greyzone-filter');
+        filterDiv = wrapper.querySelector('.painlessPeek-filter');
         for (let [optionName, optionValue] of Object.entries(options)) {
             val = optionValue["value"];
             if (optionName == "enabled") {
@@ -105,7 +113,7 @@ function updateFilter(wrapper,filterName, options) {
 function  addFilter(wrapper, filterName){
     filter = filters[filterName];
     console.log("adding filter: " + filterName);
-    filterDiv = wrapper.querySelector('.greyzone-filter');
+    filterDiv = wrapper.querySelector('.painlessPeek-filter');
     if ('add' in filter) {
         filter.add(wrapper);
     }else{
@@ -115,7 +123,7 @@ function  addFilter(wrapper, filterName){
 function removeFilter(wrapper, filterName) {
     filter = filters[filterName];
     console.log("removing filter: " + filterName);
-    filterDiv = wrapper.querySelector('.greyzone-filter');
+    filterDiv = wrapper.querySelector('.painlessPeek-filter');
     if ('remove' in filter) {
         filter.remove(wrapper);
     }else{
@@ -151,11 +159,29 @@ chrome.storage.onChanged.addListener((changes, namespace) => {
     };
     currentSelectors = selectors;
 });
+//run on new dom elements
+function watchDom(){
+    var observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.addedNodes.length != 0) {
+                updateSelectors(currentSelectors);
+            }
+        });
+    });
+    observer.observe(document, {
+      attributes: true,
+      childList: true,
+      subtree: true,
+      characterData: true
+    });
+    console.log("oberver started");
+}
 //run on load
 currentSelectors = {}
 chrome.storage.sync.get("selectors").then((result) => {
     selectors = result.selectors;
     updateSelectors(selectors);
+    watchDom();
 });
 
 
@@ -164,32 +190,35 @@ var body = document.getElementsByTagName("body")[0];
 var style = document.createElement('style');
 style.type = 'text/css';
 style.innerHTML = `
-.greyzone-filter-wrapper{
+.painlessPeek-filter-wrapper{
     position: relative;
     overflow: hidden;
+    max-width: 100%;
     width: fit-content;
+    max-height: 100%;
     height: fit-content;
     }
-.greyzone-filter{
+.painlessPeek-filter{
     position: absolute;
     top: -100%;
     left: -100%;
     width: 300vh;
     height: 300vh;
+    z-index:9999999999999;
     }
-.greyzone-filter.greyscale{
+.painlessPeek-filter.greyscale{
     backdrop-filter: grayscale(100%);
     }
-.greyzone-filter.blur {
+.painlessPeek-filter.blur {
     backdrop-filter: blur(20px);
     }
-.greyzone-filter.blur.greyscale {
+.painlessPeek-filter.blur.greyscale {
     backdrop-filter: blur(20px) grayscale(100%);
     }
-.greyzone-filter.hue-rotate {
+.painlessPeek-filter.hue-rotate {
     backdrop-filter:hue-rotate(90deg);
     }
-.greyzone-filter.letterbox{
+.painlessPeek-filter.letterbox{
     position: absolute;
     top: 0;
     left: 0;
@@ -216,13 +245,13 @@ style.innerHTML = `
     );
 }
 
-.greyzone-filters.letterbox:hover{
+.painlessPeek-filters.letterbox:hover{
     cursor: none;
 }
-.greyzone-filter.reveal{
+.painlessPeek-filter.reveal{
     transition: backdrop-filter 5s;
 }
-.greyzone-filter.reveal:hover {
+.painlessPeek-filter.reveal:hover {
     backdrop-filter: none!important;
 }
 

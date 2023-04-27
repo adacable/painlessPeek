@@ -1,4 +1,12 @@
 console.log("initiated content_all.js");
+function getImages() {
+    standard = document.getElementsByTagName("img");
+    //get images with style=background-image
+    bg = document.querySelectorAll("[style*='background-image']");
+    //join lists
+    images = Array.prototype.slice.call(standard).concat(Array.prototype.slice.call(bg));
+    return images;
+}
 
 filters = {
     "greyscale": {
@@ -45,7 +53,7 @@ function moveLetterbox(e,letterbox,outer) {
 }
 
 function updateSelector(selector) {
-    elements = document.querySelectorAll(selector.selector);
+    elements = getImages();
     wrappers = []
     elements.forEach((element) => {
         //check if wrapped by painlessPeek
@@ -151,11 +159,29 @@ chrome.storage.onChanged.addListener((changes, namespace) => {
     };
     currentSelectors = selectors;
 });
+//run on new dom elements
+function watchDom(){
+    var observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.addedNodes.length != 0) {
+                updateSelectors(currentSelectors);
+            }
+        });
+    });
+    observer.observe(document, {
+      attributes: true,
+      childList: true,
+      subtree: true,
+      characterData: true
+    });
+    console.log("oberver started");
+}
 //run on load
 currentSelectors = {}
 chrome.storage.sync.get("selectors").then((result) => {
     selectors = result.selectors;
     updateSelectors(selectors);
+    watchDom();
 });
 
 
@@ -167,7 +193,9 @@ style.innerHTML = `
 .painlessPeek-filter-wrapper{
     position: relative;
     overflow: hidden;
+    max-width: 100%;
     width: fit-content;
+    max-height: 100%;
     height: fit-content;
     }
 .painlessPeek-filter{
@@ -176,6 +204,7 @@ style.innerHTML = `
     left: -100%;
     width: 300vh;
     height: 300vh;
+    z-index:9999999999999;
     }
 .painlessPeek-filter.greyscale{
     backdrop-filter: grayscale(100%);
