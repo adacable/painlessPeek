@@ -11,7 +11,23 @@ Extra filters as compared to other tools for bluring images are useful, but the 
 
 ## Installation
 
-A crx chrome extension is available in the repository, a web store link will be available when we're at a reliable background image implementation(see below) as having the extension fail unpredictably is dangerous. 
+
+The extension is currently awaiting aproval for the second time in the chrome web store. 
+
+Chrome refuses to allow the installation of .crx files that aren't in their web store into their browser on windows and linux, no matter how much you tell them it's ok. 
+
+For now, the best way to install it is:
+- From this repository, go to the "<> Code" button in the rop right.
+- Click the drop down, and click "download zip"
+- Unzip the folder.
+- Open chrome extensions(top right menu in chrome(three vertical dots)>more tools>extensions)
+- Click the "developer mode" toggle in the top right.
+- Choose "load unpacked", now just below and to the far left of the "developer mode" toggle
+- Navigate to the folder you unzipped this repository in, then navigate to painlessPeek/Output/extension
+- Load it from there.
+- The extension should be loaded.
+
+Chromium and Firefox should load the CRX file in the root of this repo fine. 
 
 ## Roadmap
 - [x] Initial demo
@@ -30,7 +46,7 @@ A popup sits in the top left corner: it allows you to apply various filters to t
 ## Additional Information
 
 ### Known Bugs
-- Not all background images are captued by the "img" filter- particularly nasty on telegram, but fixed with the current selector
+- Google image search is intermittantly breaking filtering, seems to be unique to that site. 
 
 ### Future Work
 - Element picker ublock origin style, to allow non technical users to select elements to filter.
