@@ -19,7 +19,7 @@ A crx chrome extension is available in the repository, a web store link will be 
 - [x] Fix background image bug
 - [x] remove custom selector demo
 - [x] UI improvements
-- [*] Refactor to allow modular filters.
+- [x] Refactor to allow modular filters.
 - [ ] Add to chrome/firefox web store
 - [ ] Implement custom selectors properly
 - [ ] UI to make custom selectors
