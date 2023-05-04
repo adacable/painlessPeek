@@ -22,23 +22,3 @@ chrome.storage.sync.get("selectors", function(data) {
     chrome.storage.sync.set({"selectors": selectors}).then(function() {})
 });
 
-
-chrome.runtime.onInstalled.addListener(async () => {
-    chrome.contextMenus.create({
-      id: "ApplyFilter",
-      title: "Apply a filter",
-      type: 'normal',
-      contexts: ['all']
-    });
-});
-
-
-chrome.contextMenus.onClicked.addListener((item, tab) => {
-    const filterID = item.menuItemId;
-    const filter = filters.find(filter => filter.name === filterID);
-    chrome.scripting.executeScript({
-    target: { tabId: tab.id },
-    files: [filter["script"]]
-  });
-});
-

@@ -7,8 +7,6 @@
         "scripting",
         "activeTab",
         "storage",
-        "tabs",
-        "contextMenus",
         "http://*/*",
         "https://*/*"
     ],
@@ -16,9 +14,9 @@
         "service_worker": "background.js",
         "type": "module"
     },
-    "homepage_url": "https://greyzone.github.io",
+    "homepage_url": "https://painlessPeek.github.io",
     "action": {
-        "default_title": "GreyZone",
+        "default_title": "painlessPeek",
         "default_popup": "popup.html",
         "options_page": "options.html"
     },

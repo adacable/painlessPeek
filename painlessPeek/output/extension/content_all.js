@@ -26,8 +26,18 @@ filters = {
             var letterbox = element.querySelector(".painlessPeek-filter");
             letterbox.classList.add('letterbox');
             //set iptions
-            outer.addEventListener('mousemove', function(e) {
-                moveLetterbox(e,letterbox,outer);
+            // on mouseover
+            outer.addEventListener('mouseover', function(e) {
+                outer.addEventListener('mousemove', function(e) {
+                    moveLetterbox(e,letterbox,outer);
+                });
+                outer.addEventListener('mouseleave', function(e) {
+                    outer.removeEventListener('mousemove', moveLetterbox);
+                    letterbox.style.left = '';
+                    letterbox.style.top = '';
+                    letterbox.style.width = '';
+                    letterbox.style.height = '';
+                });
             });
         },
         "remove": function(element) {
@@ -57,7 +67,7 @@ function updateSelector(selector) {
     wrappers = []
     elements.forEach((element) => {
         //check if wrapped by painlessPeek
-        if (element.parentNode.classList.contains("painlessPeek-filter-wrapper")) {
+        if (element.classList.contains("painlessPeek-filter-image")) {
             wrappers.push(element.parentNode);
         }else{
             wrapper = wrapElement(element);
@@ -76,14 +86,42 @@ function updateSelector(selector) {
 
 function wrapElement(element) {
     //wrap image in .painlessPeek-filter
-    var wrapper = document.createElement('div');
-    wrapper.classList.add('painlessPeek-filter-wrapper');
-    element.parentNode.insertBefore(wrapper, element);
-    wrapper.appendChild(element);
+    //copy the element to be wrapped
+    savedElement = element.cloneNode(true);
+    console.log(element);
+    //change wrap to a div
+    newWrap = document.createElement("div");
+    for (index = element.attributes.length - 1; index >= 0; --index) {
+        newWrap.attributes.setNamedItem(element.attributes[index].cloneNode());
+    }
+    if (element.tagName == "IMG") {
+        imgSrc = savedElement.src;
+    }else if (element.style.backgroundImage != undefined ){
+        if (element.style.backgroundImage.startsWith("url")) {
+            if (element.style.backgroundImage.startsWith("url(\"")) {
+                imgSrc = element.style.backgroundImage.slice(5,-2);
+            }else{
+                imgSrc = element.style.backgroundImage.slice(4,-1);
+                }       
+        }
+    }else{
+        console.log(savedElement);
+    }
+    //remove background image from element
+    newWrap.style.backgroundImage = "";
+    newWrap.style.display = "inline-block";
+    innerWrap = document.createElement("div");
+    innerWrap.classList.add('painlessPeek-filter-wrapper');
+    img = document.createElement("img");
+    img.src = imgSrc;
+    img.classList.add('painlessPeek-filter-image');
+    innerWrap.appendChild(img);
     filtersDiv = document.createElement('div');
     filtersDiv.classList.add('painlessPeek-filter');
-    wrapper.appendChild(filtersDiv);
-    return wrapper;
+    innerWrap.appendChild(filtersDiv);
+    newWrap.appendChild(innerWrap);
+    element.parentNode.replaceChild(newWrap, element);
+    return newWrap;
 }
 
 function updateFilter(wrapper,filterName, options) {

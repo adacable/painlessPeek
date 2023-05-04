@@ -1,5 +1,8 @@
 # Painless peek
 
+
+**THS EXTENSION HAS HAD BASIC TESTING BUT MAY FLASH IMAGES BEFORE FILTERING THEM OCASIONALLY, AND THERE MAY BE EDGE CASES WHICH DO NOT GET FILTERED, OR INDUCE BUGS IN THE PAGE. PLEASE REPORT ANY ISSUES YOU HAVE VIA GITHUB ISSUES.**
+
 Painless Peek is a browser extension to make it easier to more safley view traumatic imagery. 
 
 It can apply various filters, from a blur or a greyscale to colour shifts, to artbitrary selectors- At the moment images, but it's easy to format it onto other targets.
@@ -16,7 +19,7 @@ A crx chrome extension is available in the repository, a web store link will be 
 - [x] Fix background image bug
 - [x] remove custom selector demo
 - [x] UI improvements
-- [ ] Refactor to allow modular filters.
+- [*] Refactor to allow modular filters.
 - [ ] Add to chrome/firefox web store
 - [ ] Implement custom selectors properly
 - [ ] UI to make custom selectors
