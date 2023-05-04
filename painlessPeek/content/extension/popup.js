@@ -261,6 +261,7 @@ function updateSelectors() {
     })
 }
 function checkSelsLoaded(result) {
+    console.log(result);
     if (result["selectors"] == undefined) {
         return resetSelectors();
     }
