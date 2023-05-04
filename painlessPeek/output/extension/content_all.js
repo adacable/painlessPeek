@@ -1,4 +1,3 @@
-console.log("initiated content_all.js");
 function getImages() {
     standard = document.getElementsByTagName("img");
     //get images with style=background-image
@@ -88,7 +87,6 @@ function wrapElement(element) {
     //wrap image in .painlessPeek-filter
     //copy the element to be wrapped
     savedElement = element.cloneNode(true);
-    console.log(element);
     //change wrap to a div
     newWrap = document.createElement("div");
     for (index = element.attributes.length - 1; index >= 0; --index) {
@@ -105,7 +103,6 @@ function wrapElement(element) {
                 }       
         }
     }else{
-        console.log(savedElement);
     }
     //remove background image from element
     newWrap.style.backgroundImage = "";
@@ -150,7 +147,6 @@ function updateFilter(wrapper,filterName, options) {
 }
 function  addFilter(wrapper, filterName){
     filter = filters[filterName];
-    console.log("adding filter: " + filterName);
     filterDiv = wrapper.querySelector('.painlessPeek-filter');
     if ('add' in filter) {
         filter.add(wrapper);
@@ -160,7 +156,6 @@ function  addFilter(wrapper, filterName){
 }
 function removeFilter(wrapper, filterName) {
     filter = filters[filterName];
-    console.log("removing filter: " + filterName);
     filterDiv = wrapper.querySelector('.painlessPeek-filter');
     if ('remove' in filter) {
         filter.remove(wrapper);
@@ -178,8 +173,6 @@ function updateSelectors(newSelectors) {
         }       
     });
     if (changedSelectors.length != 0) {
-        console.log("changed selectors: " + changedSelectors);
-        console.log(newSelectors);
         changedSelectors.forEach((changedSelector) => {
             updateSelector(changedSelector);
         });
@@ -212,7 +205,6 @@ function watchDom(){
       subtree: true,
       characterData: true
     });
-    console.log("oberver started");
 }
 //run on load
 currentSelectors = {}

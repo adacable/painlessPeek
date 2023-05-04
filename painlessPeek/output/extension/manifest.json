@@ -6,9 +6,7 @@
     "permissions": [
         "scripting",
         "activeTab",
-        "storage",
-        "http://*/*",
-        "https://*/*"
+        "storage"
     ],
     "background": {
         "service_worker": "background.js",
