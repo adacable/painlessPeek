@@ -6,6 +6,12 @@ compile '/**/*.html' do
   write item.identifier.to_s
 end
 
+compile '/**/*.md' do
+  filter :kramdown, auto_ids: false
+  layout '/default.*'
+  write item.identifier.without_ext + '.html'
+end
+
 compile '/**/*.template.json' do
   filter :erb
   write @item.identifier.without_ext.split(".")[0] + '.json'

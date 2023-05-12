@@ -1,0 +1,44 @@
+.testImg{
+    max-width: 300px;
+}
+.painlessPeek-wrapper{
+    position: relative;
+    display: inline-block;
+    overflow: hidden;
+    max-width: 100%;
+    width: fit-content;
+    max-height: 100%;
+    height: fit-content;
+    }
+.painlessPeek-filter{
+    position: absolute;
+    top: -100%;
+    left: -100%;
+    z-index:9999999999999;
+    width:300%;
+    height:300%;
+}
+.painlessPeek-filter.painlessPeek-letterbox{
+    --rect-height: 5%;
+    --rect-width: 5%;
+    clip-path: polygon( evenodd,
+    /* outer rect */
+    0 0, /* top - left */
+    100% 0, /* top - right */
+    100% 100%, /* bottom - right */
+    0% 100%, /* bottom - left */
+    0 0, /* and top - left again */
+    calc(50% - var(--rect-width)) calc(50% - var(--rect-height)),
+    calc(50% + var(--rect-width)) calc(50% - var(--rect-height)),
+    calc(50% + var(--rect-width)) calc(50% + var(--rect-height)),
+    calc(50% - var(--rect-width)) calc(50% + var(--rect-height)),
+    calc(50% - var(--rect-width)) calc(50% - var(--rect-height))
+    );
+}
+.painlessPeek-filter.painlessPeek-hover{
+    transition: all 2s ease-in-out;
+}
+.painlessPeek-filter.painlessPeek-hover:hover{
+    opacity: 0.001;
+}
+
