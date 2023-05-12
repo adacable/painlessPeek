@@ -24,7 +24,7 @@ const defaultPeeks = {
 const defaultFilters = {
     "blur" : {
         "enabled": true,
-        "filterString": "url(/filters.svg#blur)",
+        "filterString": "blur(radius)",
         "vars": {
             "radius": {
                 "humanName": "Blur radius",
