@@ -4,8 +4,6 @@
     "version": "0.0.1",
     "description": "An extension to make it easier to avoid vicarious trauma while doing OSINT work",
     "permissions": [
-        "scripting",
-        "activeTab",
         "storage"
     ],
     "background": {
