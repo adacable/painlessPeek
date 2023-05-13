@@ -18,7 +18,7 @@ body{
     margin: 2em auto;
 }
 img{
-    max-width: 300px;
+    max-width: 100%;
 }
 /*popup things */
 .filter{

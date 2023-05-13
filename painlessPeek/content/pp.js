@@ -153,7 +153,6 @@ function makePopup(element,selectors){
 
 function getFilterString(filter){
     var filterString = filter.filterString;
-    console.log(filterString);
     Object.keys(filter.vars).forEach(function (varName) {
         var str = filter.vars[varName].value + filter.vars[varName].unit;
         filterString = filterString.replace(varName, str);

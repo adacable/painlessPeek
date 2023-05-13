@@ -4,8 +4,6 @@
     "version": "0.0.1",
     "description": "<%= @config[:description] %>",
     "permissions": [
-        "scripting",
-        "activeTab",
         "storage"
     ],
     "background": {
