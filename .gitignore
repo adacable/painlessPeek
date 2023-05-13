@@ -14,5 +14,4 @@ painlessPeek/tmp/nanoc/b208555fa9587/compiled_content.data.db
 painlessPeek/crash.log
 painlessPeek/crash.log
 painlessPeek/output/.DS_Store
-painlessPeek/tmp/nanoc/b208555fa9587/checksums.data.db
-painlessPeek/tmp/nanoc/b208555fa9587/compiled_content.data.db
+painlessPeek/tmp/*
