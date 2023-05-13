@@ -39,7 +39,7 @@ function addLetterbox(filterDiv,wrapper,selector){
     filterDiv.classList.add("painlessPeek-letterbox");
     filterDiv.setAttribute("data-width",selector.peeks.letterbox.vars.width.value + selector.peeks.letterbox.vars.width.unit);
     filterDiv.setAttribute("data-height",selector.peeks.letterbox.vars.height.value + selector.peeks.letterbox.vars.height.unit);
-    wrapper.addEventListener("mousemove", function (event) {
+    document.addEventListener("mousemove", function (event) {
         moveFilter(event, filterDiv, wrapper);
     });
 };
