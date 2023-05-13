@@ -59,6 +59,7 @@ function moveFilter(e,letterbox,outer) {
 };
 function unwrap(wrapper){
     var element = wrapper.firstChild;
+    document.removeEventListener("mousemove", moveFilter);
     wrapper.parentNode.insertBefore(element, wrapper);
     wrapper.remove();
 };
