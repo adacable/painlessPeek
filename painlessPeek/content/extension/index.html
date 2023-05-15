@@ -1,0 +1,72 @@
+      <h1>Painless peek</h1>
+
+<script type="module">
+    import {egSels} from "./defaults.js"
+    import {makePopup, firstRun} from "./pp.js"
+    makePopup(document.querySelector(".popupExample"), egSels);
+    firstRun(egSels);
+</script>
+
+
+<p>Painless Peek is a browser extension to make it easier to more safley view traumatic imagery.</p>
+
+<p>It can apply various filters, from a blur or a greyscale to colour shifts, to artbitrary selectors- At the moment images, but it’s easy to format it onto other targets.</p>
+
+<p>Extra filters as compared to other tools for bluring images are useful, but the best option is the “letterbox” filter, which allows you to view part of an image without filters while leaving the rest filtered- So you can inspect the detail on a building while leaving bodies in the foreground blured.</p>
+
+<p><strong>THS EXTENSION HAS HAD BASIC TESTING BUT MAY FLASH IMAGES BEFORE FILTERING THEM OCASIONALLY, AND THERE MAY BE EDGE CASES WHICH DO NOT GET FILTERED, OR INDUCE BUGS IN THE PAGE.</strong></p>
+
+<p>Please report issues via github issues so I can fix them! </p>
+<h2> Installation</h2>
+
+<p> The extension is currently available in the <a href ="">chrome web store</a>. Please note that this verion is very much a beta release, and doesn't filter images on several important websites like t.me and twitter.com.</p>
+
+<p>Chrome refuses to allow the installation of .crx files that aren’t in their web store into their browser on windows and linux, no matter how much you tell them it’s ok.</p>
+
+<p>The best way to install the current version is:</p>
+
+<ul>
+  <li>From this repository, go to the “&lt;&gt; Code” button in the rop right.</li>
+  <li>Click the drop down, and click “download zip”</li>
+  <li>Unzip the folder.</li>
+  <li>Open chrome extensions(top right menu in chrome(three vertical dots)&gt;more tools&gt;extensions)</li>
+  <li>Click the “developer mode” toggle in the top right.</li>
+  <li>Choose “load unpacked”, now just below and to the far left of the “developer mode” toggle</li>
+  <li>Navigate to the folder you unzipped this repository in, then navigate to painlessPeek/Output/extension</li>
+  <li>Load it from there.</li>
+  <li>The extension should be loaded.</li>
+</ul>
+
+<p>Chromium and Firefox should load the CRX file in the root of the <a href="https://github.com/adacable/painlessPeek" >repository</a> fine.</p>
+
+<h2>Usage</h2>
+<p>A popup sits in the top left corner: it allows you to apply various filters to the page, targeting different selectors. Each selector has a </p>
+
+<h2>Try it out</h2>
+
+<p>Here’s an image of a puppy against a lovely sunset- Arguably the least traumatising possible image.</p>
+
+<p>Below it is an aproximation of the popup you’ll get with painless peek- With greyscale and bluring enabled. You can use the options to closley investgate the details and colours of the puppy without subjecting yourself to the full traumatising image.</p>
+
+<div class="demo">
+
+<img src="puppy-sunset.jpg" />
+<div class="popupExample popup" >
+</div>
+</div>
+
+<h2>Additional Information</h2>
+
+<h3>Known Bugs</h3>
+<ul>
+  <li>Google image search is intermittantly breaking filtering, seems to be unique to that site.</li>
+</ul>
+
+<h3>Future Work</h3>
+<ul>
+  <li>Element picker ublock origin style, to allow non technical users to select elements to filter.</li>
+  <li>Option to “paint” unfiltered areas onto an image, and then save them with only the most traumatic elements filtered, rather than viewing through a small window around the mouse</li>
+  <li>More filters, if there’s ideas for them</li>
+  <li>Full options page- at the moment everything is in the popup.</li>
+  <li>Documentation and making it easier to contribute</li>
+</ul>
