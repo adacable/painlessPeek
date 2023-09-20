@@ -3,7 +3,7 @@
 
 **THS EXTENSION HAS HAD BASIC TESTING BUT MAY FLASH IMAGES BEFORE FILTERING THEM OCASIONALLY, AND THERE MAY BE EDGE CASES WHICH DO NOT GET FILTERED, OR INDUCE BUGS IN THE PAGE.** Please report issues via github issues so I can fix them!
 
-Painless Peek is a browser extension to make it easier to more safley view traumatic imagery. 
+Painless Peek is a browser extension to make it easier to more safely view traumatic imagery. 
 
 It can apply various filters, from a blur or a greyscale to colour shifts, to artbitrary selectors- At the moment images, but it's easy to format it onto other targets.
 
