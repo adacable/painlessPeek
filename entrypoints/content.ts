@@ -1,62 +1,86 @@
 import type { FilterImpl, FilterOption, Selector } from '../shared/types';
+import './content-styles.css';
+
+// Maps filter names to their backdrop-filter CSS values.
+// Composing these in JS means we never need hardcoded combination rules in CSS.
+const backdropFilterValues: Record<string, string> = {
+    greyscale: 'grayscale(100%)',
+    blur: 'blur(20px)',
+    'hue-rotate': 'hue-rotate(90deg)',
+};
+
+function recomputeBackdropFilter(filterDiv: HTMLElement) {
+    const active = Object.keys(backdropFilterValues)
+        .filter((name) => filterDiv.classList.contains(name))
+        .map((name) => backdropFilterValues[name]);
+    filterDiv.style.backdropFilter = active.join(' ');
+}
+
+// WeakMap stores bound event handlers per wrapper so removeEventListener works correctly.
+const letterboxHandlers = new WeakMap<
+    HTMLElement,
+    { move: (e: MouseEvent) => void; leave: () => void }
+>();
 
 export default defineContentScript({
     matches: ['<all_urls>'],
     main() {
         function getImages(): HTMLElement[] {
-            const standard = Array.from(document.getElementsByTagName("img"));
+            const standard = Array.from(document.getElementsByTagName('img'));
             const bg = Array.from(document.querySelectorAll<HTMLElement>("[style*='background-image']"));
             return [...standard, ...bg];
         }
 
         const filters: Record<string, FilterImpl> = {
-            "greyscale": {},
-            "blur": {},
-            "reveal": {},
-            "hue-rotate": {},
-            "letterbox": {
+            greyscale: {},
+            blur: {},
+            reveal: {},
+            'hue-rotate': {},
+            letterbox: {
                 add(wrapper: HTMLElement) {
-                    const letterbox = wrapper.querySelector<HTMLElement>(".painlessPeek-filter");
+                    const letterbox = wrapper.querySelector<HTMLElement>('.painlessPeek-filter');
                     if (!letterbox) return;
                     letterbox.classList.add('letterbox');
-                    wrapper.addEventListener('mouseover', function() {
-                        wrapper.addEventListener('mousemove', function(e: MouseEvent) {
-                            moveLetterbox(e, letterbox, wrapper);
-                        });
-                        wrapper.addEventListener('mouseleave', function() {
-                            wrapper.removeEventListener('mousemove', moveLetterbox as EventListener);
-                            letterbox.style.left = '';
-                            letterbox.style.top = '';
-                            letterbox.style.width = '';
-                            letterbox.style.height = '';
-                        });
-                    });
+
+                    const onMove = (e: MouseEvent) => moveLetterbox(e, letterbox, wrapper);
+                    const onLeave = () => {
+                        letterbox.style.left = '';
+                        letterbox.style.top = '';
+                    };
+
+                    letterboxHandlers.set(wrapper, { move: onMove, leave: onLeave });
+                    wrapper.addEventListener('mousemove', onMove);
+                    wrapper.addEventListener('mouseleave', onLeave);
                 },
                 remove(wrapper: HTMLElement) {
-                    wrapper.removeEventListener('mousemove', moveLetterbox as EventListener);
-                    const letterbox = wrapper.querySelector<HTMLElement>(".painlessPeek-filter");
+                    const letterbox = wrapper.querySelector<HTMLElement>('.painlessPeek-filter');
                     letterbox?.classList.remove('letterbox');
-                }
-            }
+
+                    const handlers = letterboxHandlers.get(wrapper);
+                    if (handlers) {
+                        wrapper.removeEventListener('mousemove', handlers.move);
+                        wrapper.removeEventListener('mouseleave', handlers.leave);
+                        letterboxHandlers.delete(wrapper);
+                    }
+                },
+            },
         };
 
         function moveLetterbox(e: MouseEvent, letterbox: HTMLElement, outer: HTMLElement) {
             const offset = outer.getBoundingClientRect();
-            const xpos = e.clientX - offset.left - (3 * outer.offsetWidth / 2);
-            const ypos = e.clientY - offset.top - (3 * outer.offsetHeight / 2);
+            const xpos = e.clientX - offset.left - (3 * outer.offsetWidth) / 2;
+            const ypos = e.clientY - offset.top - (3 * outer.offsetHeight) / 2;
             letterbox.style.left = xpos + 'px';
             letterbox.style.top = ypos + 'px';
         }
 
         function updateSelector(selector: Selector) {
             const elements = getImages();
-            const wrappers: HTMLElement[] = [];
-            elements.forEach((element) => {
-                if (element.classList.contains("painlessPeek-filter-image")) {
-                    wrappers.push(element.parentNode as HTMLElement);
-                } else {
-                    wrappers.push(wrapElement(element));
+            const wrappers: HTMLElement[] = elements.map((element) => {
+                if (element.classList.contains('painlessPeek-filter-image')) {
+                    return element.parentNode as HTMLElement;
                 }
+                return wrapElement(element);
             });
             wrappers.forEach((wrapper) => {
                 selector.filters.forEach((filterOpts) => {
@@ -67,27 +91,27 @@ export default defineContentScript({
 
         function wrapElement(element: HTMLElement): HTMLElement {
             const savedElement = element.cloneNode(true) as HTMLElement;
-            const newWrap = document.createElement("div");
+            const newWrap = document.createElement('div');
             for (let i = element.attributes.length - 1; i >= 0; --i) {
                 newWrap.attributes.setNamedItem(element.attributes[i].cloneNode() as Attr);
             }
 
             let imgSrc = '';
-            if (element.tagName === "IMG") {
+            if (element.tagName === 'IMG') {
                 imgSrc = (savedElement as HTMLImageElement).src;
-            } else if (element.style.backgroundImage?.startsWith("url")) {
-                imgSrc = element.style.backgroundImage.startsWith("url(\"")
+            } else if (element.style.backgroundImage?.startsWith('url')) {
+                imgSrc = element.style.backgroundImage.startsWith('url("')
                     ? element.style.backgroundImage.slice(5, -2)
                     : element.style.backgroundImage.slice(4, -1);
             }
 
-            newWrap.style.backgroundImage = "";
-            newWrap.style.display = "inline-block";
+            newWrap.style.backgroundImage = '';
+            newWrap.style.display = 'inline-block';
 
-            const innerWrap = document.createElement("div");
+            const innerWrap = document.createElement('div');
             innerWrap.classList.add('painlessPeek-filter-wrapper');
 
-            const img = document.createElement("img");
+            const img = document.createElement('img');
             img.src = imgSrc;
             img.classList.add('painlessPeek-filter-image');
             innerWrap.appendChild(img);
@@ -105,24 +129,19 @@ export default defineContentScript({
             const filter = filters[filterName];
             if (filter.update) {
                 filter.update(wrapper, options);
-            } else {
-                const filterDiv = wrapper.querySelector<HTMLElement>('.painlessPeek-filter');
-                if (!filterDiv) return;
-                for (const [optionName, optionValue] of Object.entries(options)) {
-                    const val = optionValue.value;
-                    if (optionName === "enabled") {
-                        if (val === true) {
-                            if (!filterDiv.classList.contains(filterName)) {
-                                addFilter(wrapper, filterName);
-                            }
-                        } else {
-                            if (filterDiv.classList.contains(filterName)) {
-                                removeFilter(wrapper, filterName);
-                            }
-                        }
-                    } else {
-                        filterDiv.setAttribute("data-" + optionName, String(val));
+                return;
+            }
+            const filterDiv = wrapper.querySelector<HTMLElement>('.painlessPeek-filter');
+            if (!filterDiv) return;
+            for (const [optionName, optionValue] of Object.entries(options)) {
+                if (optionName === 'enabled') {
+                    if (optionValue.value === true && !filterDiv.classList.contains(filterName)) {
+                        addFilter(wrapper, filterName);
+                    } else if (optionValue.value !== true && filterDiv.classList.contains(filterName)) {
+                        removeFilter(wrapper, filterName);
                     }
+                } else {
+                    filterDiv.setAttribute('data-' + optionName, String(optionValue.value));
                 }
             }
         }
@@ -135,6 +154,7 @@ export default defineContentScript({
                 filter.add(wrapper);
             } else {
                 filterDiv.classList.add(filterName);
+                recomputeBackdropFilter(filterDiv);
             }
         }
 
@@ -146,15 +166,14 @@ export default defineContentScript({
                 filter.remove(wrapper);
             } else {
                 filterDiv.classList.remove(filterName);
+                recomputeBackdropFilter(filterDiv);
             }
         }
 
         let currentSelectors: Selector[] = [];
 
         function updateSelectors(newSelectors: Selector[]) {
-            newSelectors.forEach((newSelector) => {
-                updateSelector(newSelector);
-            });
+            newSelectors.forEach((selector) => updateSelector(selector));
             currentSelectors = newSelectors;
         }
 
@@ -165,89 +184,22 @@ export default defineContentScript({
         });
 
         function watchDom() {
-            const observer = new MutationObserver(function(mutations) {
-                mutations.forEach(function(mutation) {
-                    if (mutation.addedNodes.length !== 0) {
-                        updateSelectors(currentSelectors);
-                    }
-                });
+            const observer = new MutationObserver((mutations) => {
+                const hasNewNodes = mutations.some((m) => m.addedNodes.length > 0);
+                if (hasNewNodes) {
+                    updateSelectors(currentSelectors);
+                }
             });
             observer.observe(document, {
-                attributes: true,
                 childList: true,
                 subtree: true,
-                characterData: true
             });
         }
 
-        chrome.storage.sync.get("selectors").then((result) => {
+        chrome.storage.sync.get('selectors').then((result) => {
             const selectors = result.selectors as Selector[];
             updateSelectors(selectors);
             watchDom();
         });
-
-        const body = document.getElementsByTagName("body")[0];
-        const style = document.createElement('style');
-        style.innerHTML = `
-.painlessPeek-filter-wrapper{
-    position: relative;
-    overflow: hidden;
-    max-width: 100%;
-    width: fit-content;
-    max-height: 100%;
-    height: fit-content;
-    }
-.painlessPeek-filter{
-    position: absolute;
-    top: -100%;
-    left: -100%;
-    width: 300vh;
-    height: 300vh;
-    z-index:9999999999999;
-    }
-.painlessPeek-filter.greyscale{
-    backdrop-filter: grayscale(100%);
-    }
-.painlessPeek-filter.blur {
-    backdrop-filter: blur(20px);
-    }
-.painlessPeek-filter.blur.greyscale {
-    backdrop-filter: blur(20px) grayscale(100%);
-    }
-.painlessPeek-filter.hue-rotate {
-    backdrop-filter:hue-rotate(90deg);
-    }
-.painlessPeek-filter.letterbox{
-    position: absolute;
-    top: 0;
-    left: 0;
-    width:300%;
-    height:300%;
-    --rect-height: 5%;
-    --rect-width: 5%;
-    clip-path: polygon( evenodd,
-    0 0,
-    100% 0,
-    100% 100%,
-    0% 100%,
-    0 0,
-    calc(50% - var(--rect-width)) calc(50% - var(--rect-height)),
-    calc(50% + var(--rect-width)) calc(50% - var(--rect-height)),
-    calc(50% + var(--rect-width)) calc(50% + var(--rect-height)),
-    calc(50% - var(--rect-width)) calc(50% + var(--rect-height)),
-    calc(50% - var(--rect-width)) calc(50% - var(--rect-height))
-    );
-}
-.painlessPeek-filters.letterbox:hover{
-    cursor: none;
-}
-.painlessPeek-filter.reveal{
-    transition: backdrop-filter 5s;
-}
-.painlessPeek-filter.reveal:hover {
-    backdrop-filter: none!important;
-}
-`;
-        body.appendChild(style);
-    }
+    },
 });

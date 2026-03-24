@@ -1,56 +1,5 @@
+import { defaultFilters, defaultSelectors } from '../../shared/config';
 import type { Filter, FilterOption, Selector } from '../../shared/types';
-
-const defaultSelectors: Selector[] = [
-    {
-        name: "Images",
-        selector: "img",
-        url: "*",
-        filters: []
-    }
-];
-
-const defaultFilters: Filter[] = [
-    {
-        name: "greyscale",
-        description: "Make the image black and white",
-        peek: false,
-        options: {
-            enabled: { value: false, type: "checkbox", description: "Enable greyscale filter" }
-        }
-    },
-    {
-        name: "blur",
-        description: "Blur the image",
-        peek: false,
-        options: {
-            enabled: { value: false, type: "checkbox", description: "Enable blur filter" }
-        }
-    },
-    {
-        name: "reveal",
-        description: "Reveal the image on hover",
-        peek: true,
-        options: {
-            enabled: { value: false, type: "checkbox", description: "reveal the image slowly on hover" }
-        }
-    },
-    {
-        name: "hue-rotate",
-        description: "Rotate the hue of the image, to make colours appear different",
-        peek: false,
-        options: {
-            enabled: { value: false, type: "checkbox", description: "Enable hue-rotate filter" }
-        }
-    },
-    {
-        name: "letterbox",
-        description: "Reveal a small rectangle of the image on hover",
-        peek: true,
-        options: {
-            enabled: { value: true, type: "checkbox", description: "Enable letterbox filter" }
-        }
-    }
-];
 
 function initialiseSelectors(selectors: Selector[], filters: Filter[]): Selector[] {
     selectors.forEach(function(selector) {
@@ -78,7 +27,7 @@ function makeSelectorDiv(selector: Selector): HTMLElement {
     div.id = selector.name;
     div.className = "selector";
     const name = document.createElement("h2");
-    name.innerHTML = selector.name;
+    name.textContent = selector.name;
     div.appendChild(name);
     return addFilters(selector.filters, selector, div);
 }
@@ -98,7 +47,7 @@ function makePeekSel(peeks: Filter[]): HTMLSelectElement {
     peeksSelector.className = "peeks";
     peeks.forEach((peek) => {
         const peekOpt = document.createElement("option");
-        peekOpt.innerHTML = peek.name;
+        peekOpt.textContent = peek.name;
         if (peek.options.enabled.value) {
             peekOpt.selected = true;
         }
@@ -132,7 +81,7 @@ function makeFilterDiv(filter: Filter): HTMLFormElement {
     form.className = "filter";
     form.id = filter.name;
     const header = document.createElement("h3");
-    header.innerHTML = filter.name;
+    header.textContent = filter.name;
     form.appendChild(header);
     for (const key in filter.options) {
         form.appendChild(makeOptionDiv(filter.options[key], key));
@@ -161,7 +110,7 @@ function makeOptionDiv(option: FilterOption, optionName: string): HTMLDivElement
     div.appendChild(input);
 
     const label = document.createElement("label");
-    label.innerHTML = optionName;
+    label.textContent = optionName;
     label.classList.add(optionName);
     label.htmlFor = optionName;
     div.appendChild(label);
