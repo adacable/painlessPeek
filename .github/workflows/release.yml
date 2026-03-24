@@ -1,0 +1,51 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Format check
+        run: npx prettier --check .
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type-check
+        run: npx wxt prepare && npx tsc --noEmit
+
+      - name: Test
+        run: npx vitest run
+
+      - name: Build Chrome zip
+        run: npm run zip
+
+      - name: Build Firefox zip
+        run: npm run zip:firefox
+
+      - name: Build docs
+        run: npm run build:docs
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            output/painless-peek-*-chrome.zip
+            output/painless-peek-*-firefox.zip
+          generate_release_notes: true

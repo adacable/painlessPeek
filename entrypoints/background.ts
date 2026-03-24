@@ -1,3 +1,3 @@
 export default defineBackground(() => {
-    console.log("background.js loaded");
+  console.log('background.js loaded');
 });

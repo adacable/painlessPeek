@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { Filter, FilterOption, Selector } from '../shared/types';
+import type { Filter, FilterOption, SelectorState } from '../shared/types';
+import { defaultFilterStates, mergeSelectorStates } from '../shared/state';
 
 const defaultFilters: Filter[] = [
   {
@@ -38,7 +39,10 @@ const defaultFilters: Filter[] = [
 // Popup UI helpers (replicated from entrypoints/popup/main.ts for testing)
 // ---------------------------------------------------------------------------
 
-function makeOptionDiv(option: FilterOption, optionName: string): HTMLDivElement {
+function makeOptionDiv(
+  option: FilterOption,
+  optionName: string
+): HTMLDivElement {
   const div = document.createElement('div');
   div.className = 'option';
   div.classList.add(optionName);
@@ -69,66 +73,78 @@ function makeFilterDiv(filter: Filter): HTMLFormElement {
   return form;
 }
 
-function makeDefaultSelectors(): Selector[] {
-  return [{ name: 'Images', selector: 'img', url: '*', filters: [] }];
+function makeDefaultSelectorStates(): SelectorState[] {
+  return [
+    { name: 'Images', filterStates: defaultFilterStates(defaultFilters) },
+  ];
 }
 
-function initialiseSelectors(selectors: Selector[], filters: Filter[]): Selector[] {
-  selectors.forEach((s) => { s.filters = filters; });
-  chrome.storage.sync.set({ selectors });
-  return selectors;
+function initialise(): SelectorState[] {
+  const states = makeDefaultSelectorStates();
+  chrome.storage.sync.set({ selectors: states });
+  return states;
 }
 
-function resetSelectors(): Selector[] {
-  return initialiseSelectors(makeDefaultSelectors(), defaultFilters);
+function isValidSelectorState(s: unknown): s is SelectorState {
+  return typeof s === 'object' && s !== null && 'filterStates' in s;
 }
 
-function checkSelsLoaded(result: { selectors?: Selector[] }): Selector[] {
-  if (!result.selectors) return resetSelectors();
-  return result.selectors;
+function checkSelsLoaded(result: { selectors?: unknown[] }): SelectorState[] {
+  if (!result.selectors || !result.selectors.every(isValidSelectorState))
+    return initialise();
+  return mergeSelectorStates(result.selectors, defaultFilters);
 }
 
 describe('checkSelsLoaded', () => {
-  it('returns stored selectors when present', () => {
-    const stored: Selector[] = [
-      { name: 'Images', selector: 'img', url: '*', filters: defaultFilters },
-    ];
-    expect(checkSelsLoaded({ selectors: stored })).toBe(stored);
+  it('returns stored selectors when present and valid', () => {
+    const stored: SelectorState[] = makeDefaultSelectorStates();
+    const result = checkSelsLoaded({ selectors: stored });
+    expect(result[0].name).toBe('Images');
+    expect(result[0].filterStates['blur'].radius).toBe(20);
   });
 
   it('resets and returns defaults when storage is empty', () => {
     const result = checkSelsLoaded({});
     expect(result).toHaveLength(1);
     expect(result[0].name).toBe('Images');
-    expect(result[0].filters).toEqual(defaultFilters);
+    expect(result[0].filterStates['blur'].radius).toBe(20);
   });
 
-  it('writes defaults to storage when resetting', async () => {
+  it('reinitialises when selectors are in old format (no filterStates)', () => {
+    const oldFormat = [
+      { name: 'Images', selector: 'img', url: '*', filters: [] },
+    ];
+    const result = checkSelsLoaded({ selectors: oldFormat });
+    expect(result[0].filterStates).toBeDefined();
+    expect(result[0].filterStates['blur'].radius).toBe(20);
+  });
+
+  it('writes defaults to storage when resetting', () => {
     checkSelsLoaded({});
     expect(chrome.storage.sync.set).toHaveBeenCalledWith({
       selectors: expect.arrayContaining([
-        expect.objectContaining({ name: 'Images', filters: defaultFilters }),
+        expect.objectContaining({ name: 'Images' }),
       ]),
     });
   });
 });
 
-describe('initialiseSelectors', () => {
-  it('assigns filters to every selector', () => {
-    const selectors = makeDefaultSelectors();
-    initialiseSelectors(selectors, defaultFilters);
-    expect(selectors[0].filters).toBe(defaultFilters);
+describe('initialise', () => {
+  it('creates SelectorState with filterStates for each filter', () => {
+    const states = initialise();
+    expect(states[0].filterStates['greyscale']).toBeDefined();
+    expect(states[0].filterStates['blur']).toBeDefined();
+    expect(states[0].filterStates['letterbox']).toBeDefined();
   });
 
   it('persists to storage', () => {
-    const selectors = makeDefaultSelectors();
-    initialiseSelectors(selectors, defaultFilters);
-    expect(chrome.storage.sync.set).toHaveBeenCalledWith({ selectors });
+    const states = initialise();
+    expect(chrome.storage.sync.set).toHaveBeenCalledWith({ selectors: states });
   });
 
-  it('returns the selectors', () => {
-    const selectors = makeDefaultSelectors();
-    expect(initialiseSelectors(selectors, defaultFilters)).toBe(selectors);
+  it('returns the selector states', () => {
+    const states = initialise();
+    expect(states).toHaveLength(1);
   });
 });
 
@@ -153,21 +169,21 @@ describe('peek vs cosmetic filter split', () => {
 });
 
 describe('storage round-trip', () => {
-  it('stores and retrieves selectors correctly', async () => {
-    const selectors = makeDefaultSelectors();
-    initialiseSelectors(selectors, defaultFilters);
-    const result = await (chrome.storage.sync.get('selectors') as Promise<{ selectors: Selector[] }>);
-    expect(result.selectors[0].filters).toEqual(defaultFilters);
+  it('stores and retrieves selector states correctly', async () => {
+    const states = initialise();
+    const result = await (chrome.storage.sync.get('selectors') as Promise<{
+      selectors: SelectorState[];
+    }>);
+    expect(result.selectors[0].filterStates).toEqual(states[0].filterStates);
   });
 
   it('range option values survive a storage round-trip', async () => {
-    const selectors = makeDefaultSelectors();
-    initialiseSelectors(selectors, defaultFilters);
-    const result = await (chrome.storage.sync.get('selectors') as Promise<{ selectors: Selector[] }>);
-    const blur = result.selectors[0].filters.find((f) => f.name === 'blur');
-    expect(blur?.options.radius.value).toBe(20);
-    expect(blur?.options.radius.type).toBe('range');
-    expect(blur?.options.radius.unit).toBe('px');
+    initialise();
+    const result = await (chrome.storage.sync.get('selectors') as Promise<{
+      selectors: SelectorState[];
+    }>);
+    expect(result.selectors[0].filterStates['blur'].radius).toBe(20);
+    expect(result.selectors[0].filterStates['greyscale'].percent).toBe(100);
   });
 });
 
@@ -177,14 +193,26 @@ describe('storage round-trip', () => {
 
 describe('makeOptionDiv — range inputs', () => {
   it('renders a range input for a range-type option', () => {
-    const option: FilterOption = { value: 20, type: 'range', min: 0, max: 50, unit: 'px' };
+    const option: FilterOption = {
+      value: 20,
+      type: 'range',
+      min: 0,
+      max: 50,
+      unit: 'px',
+    };
     const div = makeOptionDiv(option, 'radius');
     const input = div.querySelector<HTMLInputElement>('input');
     expect(input?.type).toBe('range');
   });
 
   it('range input has correct min, max and value attributes', () => {
-    const option: FilterOption = { value: 20, type: 'range', min: 0, max: 50, unit: 'px' };
+    const option: FilterOption = {
+      value: 20,
+      type: 'range',
+      min: 0,
+      max: 50,
+      unit: 'px',
+    };
     const div = makeOptionDiv(option, 'radius');
     const input = div.querySelector<HTMLInputElement>('input')!;
     expect(input.min).toBe('0');
@@ -193,14 +221,26 @@ describe('makeOptionDiv — range inputs', () => {
   });
 
   it('range input name matches optionName', () => {
-    const option: FilterOption = { value: 20, type: 'range', min: 0, max: 50, unit: 'px' };
+    const option: FilterOption = {
+      value: 20,
+      type: 'range',
+      min: 0,
+      max: 50,
+      unit: 'px',
+    };
     const div = makeOptionDiv(option, 'radius');
     const input = div.querySelector<HTMLInputElement>('input')!;
     expect(input.name).toBe('radius');
   });
 
   it('renders a label for the range option', () => {
-    const option: FilterOption = { value: 90, type: 'range', min: 0, max: 360, unit: 'deg' };
+    const option: FilterOption = {
+      value: 90,
+      type: 'range',
+      min: 0,
+      max: 360,
+      unit: 'deg',
+    };
     const div = makeOptionDiv(option, 'deg');
     const label = div.querySelector('label');
     expect(label).not.toBeNull();
@@ -209,7 +249,9 @@ describe('makeOptionDiv — range inputs', () => {
 
   it('greyscale percent range input renders with correct bounds', () => {
     const form = makeFilterDiv(defaultFilters[0]); // greyscale
-    const rangeInput = form.querySelector<HTMLInputElement>('input[type="range"]');
+    const rangeInput = form.querySelector<HTMLInputElement>(
+      'input[type="range"]'
+    );
     expect(rangeInput).not.toBeNull();
     expect(rangeInput?.min).toBe('0');
     expect(rangeInput?.max).toBe('100');
@@ -218,7 +260,9 @@ describe('makeOptionDiv — range inputs', () => {
 
   it('blur radius range input renders with correct bounds', () => {
     const form = makeFilterDiv(defaultFilters[2]); // blur
-    const rangeInput = form.querySelector<HTMLInputElement>('input[type="range"]');
+    const rangeInput = form.querySelector<HTMLInputElement>(
+      'input[type="range"]'
+    );
     expect(rangeInput).not.toBeNull();
     expect(rangeInput?.min).toBe('0');
     expect(rangeInput?.max).toBe('50');
@@ -227,13 +271,17 @@ describe('makeOptionDiv — range inputs', () => {
 
   it('letterbox renders two range inputs (width and height)', () => {
     const form = makeFilterDiv(defaultFilters[1]); // letterbox
-    const rangeInputs = form.querySelectorAll<HTMLInputElement>('input[type="range"]');
+    const rangeInputs = form.querySelectorAll<HTMLInputElement>(
+      'input[type="range"]'
+    );
     expect(rangeInputs).toHaveLength(2);
   });
 
   it('letterbox width and height inputs both have min 0', () => {
     const form = makeFilterDiv(defaultFilters[1]);
-    const rangeInputs = Array.from(form.querySelectorAll<HTMLInputElement>('input[type="range"]'));
+    const rangeInputs = Array.from(
+      form.querySelectorAll<HTMLInputElement>('input[type="range"]')
+    );
     rangeInputs.forEach((input) => expect(input.min).toBe('0'));
   });
 
@@ -247,7 +295,9 @@ describe('makeOptionDiv — range inputs', () => {
 
   it('a filter with both enabled checkbox and range options renders both input types', () => {
     const form = makeFilterDiv(defaultFilters[0]); // greyscale
-    const checkbox = form.querySelector<HTMLInputElement>('input[type="checkbox"]');
+    const checkbox = form.querySelector<HTMLInputElement>(
+      'input[type="checkbox"]'
+    );
     const range = form.querySelector<HTMLInputElement>('input[type="range"]');
     expect(checkbox).not.toBeNull();
     expect(range).not.toBeNull();
@@ -260,33 +310,32 @@ describe('makeOptionDiv — range inputs', () => {
 
 describe('range slider value persistence', () => {
   it('updating a range option value and saving persists the new value', async () => {
-    const selectors = makeDefaultSelectors();
-    initialiseSelectors(selectors, defaultFilters);
-
-    // Simulate slider change: update blur radius to 10
-    const stored = await (chrome.storage.sync.get('selectors') as Promise<{ selectors: Selector[] }>);
+    initialise();
+    const stored = await (chrome.storage.sync.get('selectors') as Promise<{
+      selectors: SelectorState[];
+    }>);
     const sels = stored.selectors;
-    const blur = sels[0].filters.find((f) => f.name === 'blur')!;
-    blur.options.radius.value = 10;
+    sels[0].filterStates['blur'].radius = 10;
     chrome.storage.sync.set({ selectors: sels });
 
-    const updated = await (chrome.storage.sync.get('selectors') as Promise<{ selectors: Selector[] }>);
-    const updatedBlur = updated.selectors[0].filters.find((f) => f.name === 'blur')!;
-    expect(updatedBlur.options.radius.value).toBe(10);
+    const updated = await (chrome.storage.sync.get('selectors') as Promise<{
+      selectors: SelectorState[];
+    }>);
+    expect(updated.selectors[0].filterStates['blur'].radius).toBe(10);
   });
 
   it('updating one filter range value does not affect other filters', async () => {
-    const selectors = makeDefaultSelectors();
-    initialiseSelectors(selectors, defaultFilters);
-
-    const stored = await (chrome.storage.sync.get('selectors') as Promise<{ selectors: Selector[] }>);
+    initialise();
+    const stored = await (chrome.storage.sync.get('selectors') as Promise<{
+      selectors: SelectorState[];
+    }>);
     const sels = stored.selectors;
-    const blur = sels[0].filters.find((f) => f.name === 'blur')!;
-    blur.options.radius.value = 10;
+    sels[0].filterStates['blur'].radius = 10;
     chrome.storage.sync.set({ selectors: sels });
 
-    const updated = await (chrome.storage.sync.get('selectors') as Promise<{ selectors: Selector[] }>);
-    const greyscale = updated.selectors[0].filters.find((f) => f.name === 'greyscale')!;
-    expect(greyscale.options.percent.value).toBe(100); // unchanged
+    const updated = await (chrome.storage.sync.get('selectors') as Promise<{
+      selectors: SelectorState[];
+    }>);
+    expect(updated.selectors[0].filterStates['greyscale'].percent).toBe(100); // unchanged
   });
 });
