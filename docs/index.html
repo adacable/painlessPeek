@@ -1,0 +1,100 @@
+---
+layout: default
+title: Painless Peek
+---
+
+<h1>Painless Peek</h1>
+
+<p>
+  Painless Peek is a browser extension to make it easier to more safely view
+  traumatic imagery.
+</p>
+
+<p>
+  It applies filters — blur, greyscale, hue rotation — to images on any page.
+  The best option is the <strong>letterbox</strong> filter, which lets you view
+  a small window of an image while leaving the rest filtered. You can inspect
+  the detail on a building while leaving bodies in the foreground blurred.
+</p>
+
+<p>
+  <strong
+    >This extension has had basic testing but may flash images before filtering
+    them occasionally, and there may be edge cases which are not filtered.
+    Please
+    <a href="https://github.com/adacable/painlessPeek/issues"
+      >report issues on GitHub</a
+    >.</strong
+  >
+</p>
+
+<h2>Installation</h2>
+
+<h3>Firefox</h3>
+<p>
+  Download the latest <code>.zip</code> from the
+  <a href="https://github.com/adacable/painlessPeek/releases">releases page</a>
+  and load it as a temporary add-on via <code>about:debugging</code>.
+</p>
+
+<h3>Chrome</h3>
+<ol>
+  <li>
+    Download and unzip the latest release from the
+    <a href="https://github.com/adacable/painlessPeek/releases">releases page</a
+    >.
+  </li>
+  <li>
+    Open <code>chrome://extensions</code>, enable Developer Mode (top right).
+  </li>
+  <li>
+    Click <strong>Load unpacked</strong> and select the unzipped
+    <code>chrome-mv3</code> folder.
+  </li>
+</ol>
+
+<h2>Try it out</h2>
+
+<p>
+  Here's a puppy at sunset. Below the image is a live version of the Painless
+  Peek popup — try toggling filters and adjusting the sliders.
+</p>
+
+<div class="demo">
+  <img
+    src="{{ '/assets/img/puppy-sunset.jpg' | relative_url }}"
+    alt="A puppy at sunset"
+  />
+  <div class="popup-demo popup"></div>
+</div>
+
+<h2>Usage</h2>
+
+<p>
+  The popup appears when you click the extension icon. Each selector (e.g.
+  "Images") has:
+</p>
+<ul>
+  <li>
+    A <strong>peek</strong> dropdown — choose <em>letterbox</em> to reveal a
+    small window under your cursor, or <em>reveal</em> to slowly unblur on
+    hover.
+  </li>
+  <li>
+    <strong>Filter toggles</strong> — enable greyscale, blur, or hue-rotate,
+    with sliders to control the intensity.
+  </li>
+</ul>
+
+<h2>Known issues</h2>
+<ul>
+  <li>Google Image Search intermittently breaks filtering.</li>
+</ul>
+
+<h2>Future work</h2>
+<ul>
+  <li>Element picker (uBlock-style) for non-technical users.</li>
+  <li>"Paint" mode — save images with only traumatic areas filtered.</li>
+  <li>Full options page.</li>
+  <li>More filters.</li>
+</ul>

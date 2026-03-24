@@ -238,28 +238,32 @@ describe('mergeSelectorStates', () => {
   });
 
   it('appends a new default selector missing from storage', () => {
-    const stored: SelectorState[] = [
-      { name: 'Images', filterStates: {} },
-    ];
+    const stored: SelectorState[] = [{ name: 'Images', filterStates: {} }];
     // Simulate a second selector having been added to defaultSelectors
     const extendedSelectors = [
       ...defaultSelectors,
       { name: 'Videos', selector: 'video', url: '*' },
     ];
-    const result = mergeSelectorStates(stored, defaultFilters, extendedSelectors);
+    const result = mergeSelectorStates(
+      stored,
+      defaultFilters,
+      extendedSelectors
+    );
     expect(result).toHaveLength(2);
     expect(result.map((s) => s.name)).toContain('Videos');
   });
 
   it('new selector gets full default filter states', () => {
-    const stored: SelectorState[] = [
-      { name: 'Images', filterStates: {} },
-    ];
+    const stored: SelectorState[] = [{ name: 'Images', filterStates: {} }];
     const extendedSelectors = [
       ...defaultSelectors,
       { name: 'Videos', selector: 'video', url: '*' },
     ];
-    const result = mergeSelectorStates(stored, defaultFilters, extendedSelectors);
+    const result = mergeSelectorStates(
+      stored,
+      defaultFilters,
+      extendedSelectors
+    );
     const videos = result.find((s) => s.name === 'Videos')!;
     expect(videos.filterStates['blur'].enabled).toBe(false);
     expect(videos.filterStates['blur'].radius).toBe(20);
@@ -274,15 +278,17 @@ describe('mergeSelectorStates', () => {
       ...defaultSelectors,
       { name: 'Videos', selector: 'video', url: '*' },
     ];
-    const result = mergeSelectorStates(stored, defaultFilters, extendedSelectors);
+    const result = mergeSelectorStates(
+      stored,
+      defaultFilters,
+      extendedSelectors
+    );
     const images = result.find((s) => s.name === 'Images')!;
     expect(images.filterStates['blur'].radius).toBe(7);
   });
 
   it('does not duplicate selectors already in storage', () => {
-    const stored: SelectorState[] = [
-      { name: 'Images', filterStates: {} },
-    ];
+    const stored: SelectorState[] = [{ name: 'Images', filterStates: {} }];
     const result = mergeSelectorStates(stored, defaultFilters);
     expect(result.filter((s) => s.name === 'Images')).toHaveLength(1);
   });
@@ -319,7 +325,9 @@ describe('integration with defaultSelectors config', () => {
 
   it('can produce SelectorState for every default selector', () => {
     const states = defaultFilterStates(defaultFilters);
-    const selectorStates = defaultSelectors.map((s) => stateToStorage(s.name, states));
+    const selectorStates = defaultSelectors.map((s) =>
+      stateToStorage(s.name, states)
+    );
     expect(selectorStates).toHaveLength(1);
     expect(selectorStates[0].name).toBe('Images');
     expect(selectorStates[0].filterStates).toHaveProperty('blur');

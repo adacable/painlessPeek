@@ -5,15 +5,20 @@ const store: Record<string, unknown> = {};
 const chromeMock = {
   storage: {
     sync: {
-      get: vi.fn((keys: string | string[], cb?: (result: Record<string, unknown>) => void) => {
-        const key = Array.isArray(keys) ? keys[0] : keys;
-        const result = { [key]: store[key] };
-        if (cb) {
-          cb(result);
-          return undefined;
+      get: vi.fn(
+        (
+          keys: string | string[],
+          cb?: (result: Record<string, unknown>) => void
+        ) => {
+          const key = Array.isArray(keys) ? keys[0] : keys;
+          const result = { [key]: store[key] };
+          if (cb) {
+            cb(result);
+            return undefined;
+          }
+          return Promise.resolve(result);
         }
-        return Promise.resolve(result);
-      }),
+      ),
       set: vi.fn((items: Record<string, unknown>, cb?: () => void) => {
         Object.assign(store, items);
         if (cb) {

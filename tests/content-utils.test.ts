@@ -1,8 +1,5 @@
 import { describe, expect, it, beforeEach } from 'vitest';
-import {
-  recomputeBackdropFilter,
-  wrapElement,
-} from '../shared/content-utils';
+import { recomputeBackdropFilter, wrapElement } from '../shared/content-utils';
 import type { Filter } from '../shared/types';
 
 // ---------------------------------------------------------------------------
@@ -49,7 +46,12 @@ const letterboxFilter: Filter = {
   },
 };
 
-const testFilters: Filter[] = [blurFilter, greyscaleFilter, hueRotateFilter, letterboxFilter];
+const testFilters: Filter[] = [
+  blurFilter,
+  greyscaleFilter,
+  hueRotateFilter,
+  letterboxFilter,
+];
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -61,7 +63,10 @@ function makeFilterDiv(...classNames: string[]): HTMLElement {
   return div;
 }
 
-function makeImg(src: string, extraAttrs: Record<string, string> = {}): HTMLImageElement {
+function makeImg(
+  src: string,
+  extraAttrs: Record<string, string> = {}
+): HTMLImageElement {
   const img = document.createElement('img');
   img.src = src;
   for (const [k, v] of Object.entries(extraAttrs)) {
@@ -302,7 +307,9 @@ describe('letterbox CSS custom property updates', () => {
     const img = makeImg('http://example.com/photo.jpg');
     attachToBody(img);
     const wrapper = wrapElement(img);
-    const filterDiv = wrapper.querySelector<HTMLElement>('.painlessPeek-filter')!;
+    const filterDiv = wrapper.querySelector<HTMLElement>(
+      '.painlessPeek-filter'
+    )!;
     expect(filterDiv.style.getPropertyValue('--rect-width')).toBe('');
     expect(filterDiv.style.getPropertyValue('--rect-height')).toBe('');
   });
@@ -316,7 +323,10 @@ describe('letterbox CSS custom property updates', () => {
 
     // Simulate what letterbox add() should do
     div.style.setProperty('--rect-width', div.getAttribute('data-width') + '%');
-    div.style.setProperty('--rect-height', div.getAttribute('data-height') + '%');
+    div.style.setProperty(
+      '--rect-height',
+      div.getAttribute('data-height') + '%'
+    );
 
     expect(div.style.getPropertyValue('--rect-width')).toBe('10%');
     expect(div.style.getPropertyValue('--rect-height')).toBe('15%');
@@ -346,7 +356,9 @@ describe('wrapElement (img)', () => {
     const img = makeImg('http://example.com/photo.jpg');
     attachToBody(img);
     const wrapper = wrapElement(img);
-    expect(wrapper.querySelector('.painlessPeek-filter-wrapper')).not.toBeNull();
+    expect(
+      wrapper.querySelector('.painlessPeek-filter-wrapper')
+    ).not.toBeNull();
   });
 
   it('inner wrapper contains an img with class painlessPeek-filter-image', () => {
@@ -360,7 +372,9 @@ describe('wrapElement (img)', () => {
     const img = makeImg('http://example.com/photo.jpg');
     attachToBody(img);
     const wrapper = wrapElement(img);
-    const innerImg = wrapper.querySelector<HTMLImageElement>('.painlessPeek-filter-image');
+    const innerImg = wrapper.querySelector<HTMLImageElement>(
+      '.painlessPeek-filter-image'
+    );
     expect(innerImg?.src).toBe('http://example.com/photo.jpg');
   });
 
@@ -379,7 +393,9 @@ describe('wrapElement (img)', () => {
   });
 
   it('copies class attribute from original img to wrapper', () => {
-    const img = makeImg('http://example.com/photo.jpg', { class: 'hero-image featured' });
+    const img = makeImg('http://example.com/photo.jpg', {
+      class: 'hero-image featured',
+    });
     attachToBody(img);
     const wrapper = wrapElement(img);
     expect(wrapper.classList.contains('hero-image')).toBe(true);
@@ -414,7 +430,9 @@ describe('wrapElement (img)', () => {
     const img = makeImg('/images/photo.jpg');
     attachToBody(img);
     const wrapper = wrapElement(img);
-    const innerImg = wrapper.querySelector<HTMLImageElement>('.painlessPeek-filter-image');
+    const innerImg = wrapper.querySelector<HTMLImageElement>(
+      '.painlessPeek-filter-image'
+    );
     expect(innerImg?.src).toContain('photo.jpg');
   });
 
@@ -436,7 +454,9 @@ describe('wrapElement (background-image)', () => {
     const div = makeBgElement('url("http://example.com/photo.jpg")');
     attachToBody(div);
     const wrapper = wrapElement(div);
-    const innerImg = wrapper.querySelector<HTMLImageElement>('.painlessPeek-filter-image');
+    const innerImg = wrapper.querySelector<HTMLImageElement>(
+      '.painlessPeek-filter-image'
+    );
     expect(innerImg?.src).toBe('http://example.com/photo.jpg');
   });
 
@@ -444,7 +464,9 @@ describe('wrapElement (background-image)', () => {
     const div = makeBgElement('url(http://example.com/photo.jpg)');
     attachToBody(div);
     const wrapper = wrapElement(div);
-    const innerImg = wrapper.querySelector<HTMLImageElement>('.painlessPeek-filter-image');
+    const innerImg = wrapper.querySelector<HTMLImageElement>(
+      '.painlessPeek-filter-image'
+    );
     expect(innerImg?.src).toBe('http://example.com/photo.jpg');
   });
 
@@ -454,7 +476,9 @@ describe('wrapElement (background-image)', () => {
     const div = makeBgElement("url('http://example.com/photo.jpg')");
     attachToBody(div);
     const wrapper = wrapElement(div);
-    const innerImg = wrapper.querySelector<HTMLImageElement>('.painlessPeek-filter-image');
+    const innerImg = wrapper.querySelector<HTMLImageElement>(
+      '.painlessPeek-filter-image'
+    );
     expect(innerImg?.src).toBe('http://example.com/photo.jpg');
   });
 
@@ -462,7 +486,9 @@ describe('wrapElement (background-image)', () => {
     const div = document.createElement('div');
     attachToBody(div);
     const wrapper = wrapElement(div);
-    const innerImg = wrapper.querySelector<HTMLImageElement>('.painlessPeek-filter-image');
+    const innerImg = wrapper.querySelector<HTMLImageElement>(
+      '.painlessPeek-filter-image'
+    );
     expect(innerImg?.src).toBe('');
   });
 
@@ -507,8 +533,18 @@ describe('defaultFilters mutation hazards', () => {
   it('initialiseSelectors with multiple selectors gives them all the SAME filters reference', async () => {
     const { defaultFilters } = await import('../shared/config');
     const selectors = [
-      { name: 'Images', selector: 'img', url: '*', filters: [] as typeof defaultFilters },
-      { name: 'Divs', selector: 'div', url: '*', filters: [] as typeof defaultFilters },
+      {
+        name: 'Images',
+        selector: 'img',
+        url: '*',
+        filters: [] as typeof defaultFilters,
+      },
+      {
+        name: 'Divs',
+        selector: 'div',
+        url: '*',
+        filters: [] as typeof defaultFilters,
+      },
     ];
     selectors.forEach((s) => {
       s.filters = defaultFilters;
@@ -532,7 +568,9 @@ describe('wrapElement + recomputeBackdropFilter integration', () => {
     const img = makeImg('http://example.com/photo.jpg');
     attachToBody(img);
     const wrapper = wrapElement(img);
-    const filterDiv = wrapper.querySelector<HTMLElement>('.painlessPeek-filter')!;
+    const filterDiv = wrapper.querySelector<HTMLElement>(
+      '.painlessPeek-filter'
+    )!;
 
     filterDiv.classList.add('blur');
     recomputeBackdropFilter(filterDiv, testFilters);
@@ -544,7 +582,9 @@ describe('wrapElement + recomputeBackdropFilter integration', () => {
     const img = makeImg('http://example.com/photo.jpg');
     attachToBody(img);
     const wrapper = wrapElement(img);
-    const filterDiv = wrapper.querySelector<HTMLElement>('.painlessPeek-filter')!;
+    const filterDiv = wrapper.querySelector<HTMLElement>(
+      '.painlessPeek-filter'
+    )!;
 
     filterDiv.classList.add('blur');
     filterDiv.setAttribute('data-radius', '7');
@@ -557,7 +597,9 @@ describe('wrapElement + recomputeBackdropFilter integration', () => {
     const img = makeImg('http://example.com/photo.jpg');
     attachToBody(img);
     const wrapper = wrapElement(img);
-    const filterDiv = wrapper.querySelector<HTMLElement>('.painlessPeek-filter')!;
+    const filterDiv = wrapper.querySelector<HTMLElement>(
+      '.painlessPeek-filter'
+    )!;
 
     filterDiv.classList.add('greyscale');
     recomputeBackdropFilter(filterDiv, testFilters);
@@ -576,8 +618,12 @@ describe('wrapElement + recomputeBackdropFilter integration', () => {
     const wrapper1 = wrapElement(img1);
     const wrapper2 = wrapElement(img2);
 
-    const filter1 = wrapper1.querySelector<HTMLElement>('.painlessPeek-filter')!;
-    const filter2 = wrapper2.querySelector<HTMLElement>('.painlessPeek-filter')!;
+    const filter1 = wrapper1.querySelector<HTMLElement>(
+      '.painlessPeek-filter'
+    )!;
+    const filter2 = wrapper2.querySelector<HTMLElement>(
+      '.painlessPeek-filter'
+    )!;
 
     filter1.classList.add('blur');
     filter1.setAttribute('data-radius', '10');

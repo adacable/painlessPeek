@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{ page.title | default: site.title }}</title>
+    <meta name="description" content="{{ site.description }}" />
+    <link
+      rel="stylesheet"
+      href="{{ '/assets/css/style.css' | relative_url }}"
+    />
+    <link
+      rel="icon"
+      href="{{ '/assets/img/icon.png' | relative_url }}"
+      sizes="32x32"
+    />
+  </head>
+  <body class="website">
+    <div id="main">{{ content }}</div>
+    <script
+      type="module"
+      src="{{ '/assets/js/demo.js' | relative_url }}"
+    ></script>
+  </body>
+</html>

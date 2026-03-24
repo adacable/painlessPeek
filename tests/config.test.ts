@@ -44,7 +44,10 @@ describe('defaultFilters completeness', () => {
 
   it('every filter has an enabled checkbox option', () => {
     defaultFilters.forEach((f) => {
-      expect(f.options.enabled, `${f.name} missing enabled option`).toBeDefined();
+      expect(
+        f.options.enabled,
+        `${f.name} missing enabled option`
+      ).toBeDefined();
       expect(f.options.enabled.type).toBe('checkbox');
     });
   });

@@ -8,6 +8,7 @@
     "zip": "wxt zip",
     "zip:firefox": "wxt zip -b firefox",
     "build:firefox": "wxt build -b firefox",
+    "build:docs": "vite build --config vite.config.docs.ts",
     "test": "vitest",
     "test:coverage": "vitest run --coverage",
     "lint": "eslint .",
