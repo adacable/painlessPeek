@@ -153,10 +153,7 @@ export default defineContentScript({
 
         function updateSelectors(newSelectors: Selector[]) {
             newSelectors.forEach((newSelector) => {
-                const prev = currentSelectors.find(s => s.name === newSelector.name);
-                if (!prev) {
-                    updateSelector(newSelector);
-                }
+                updateSelector(newSelector);
             });
             currentSelectors = newSelectors;
         }
