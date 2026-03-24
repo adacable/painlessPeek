@@ -1,4 +1,4 @@
-import type { Filter, FilterImpl, FilterOption, Selector } from '../shared/types';
+import type { FilterImpl, FilterOption, Selector } from '../shared/types';
 
 export default defineContentScript({
     matches: ['<all_urls>'],

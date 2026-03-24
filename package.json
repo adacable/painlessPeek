@@ -1,12 +1,26 @@
 {
   "name": "painless-peek",
   "version": "0.0.1",
+  "type": "module",
   "scripts": {
     "dev": "wxt",
     "build": "wxt build",
-    "zip": "wxt zip"
+    "zip": "wxt zip",
+    "test": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint .",
+    "format": "prettier --write ."
   },
   "devDependencies": {
+    "@types/chrome": "^0.1.38",
+    "@typescript-eslint/eslint-plugin": "^8.57.2",
+    "@typescript-eslint/parser": "^8.57.2",
+    "@vitest/coverage-v8": "^4.1.1",
+    "eslint": "^10.1.0",
+    "eslint-config-prettier": "^10.1.8",
+    "jsdom": "^29.0.1",
+    "prettier": "^3.8.1",
+    "vitest": "^4.1.1",
     "wxt": "latest"
   }
 }

@@ -22,6 +22,6 @@ export default [
   },
   prettier,
   {
-    ignores: ['node_modules/', 'output/', '.wxt/', 'dist/'],
+    ignores: ['node_modules/', 'output/', '.wxt/', 'dist/', 'painlessPeek/'],
   },
 ];
