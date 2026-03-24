@@ -1,5 +1,5 @@
-import type { FilterImpl, FilterOption, Selector } from '../shared/types';
-import { backdropFilterValues, recomputeBackdropFilter, wrapElement } from '../shared/content-utils';
+import type { Filter, FilterImpl, FilterOption, Selector } from '../shared/types';
+import { recomputeBackdropFilter, wrapElement } from '../shared/content-utils';
 import './content-styles.css';
 
 // WeakMap stores bound event handlers per wrapper so removeEventListener works correctly.
@@ -17,7 +17,9 @@ export default defineContentScript({
             return [...standard, ...bg];
         }
 
-        const filters: Record<string, FilterImpl> = {
+        let selectorFilters: Filter[] = [];
+
+        const filterImpls: Record<string, FilterImpl> = {
             greyscale: {},
             blur: {},
             reveal: {},
@@ -27,6 +29,7 @@ export default defineContentScript({
                     const letterbox = wrapper.querySelector<HTMLElement>('.painlessPeek-filter');
                     if (!letterbox) return;
                     letterbox.classList.add('letterbox');
+                    applyLetterboxSize(letterbox);
 
                     const onMove = (e: MouseEvent) => moveLetterbox(e, letterbox, wrapper);
                     const onLeave = () => {
@@ -49,8 +52,33 @@ export default defineContentScript({
                         letterboxHandlers.delete(wrapper);
                     }
                 },
+                update(wrapper: HTMLElement, options: Record<string, FilterOption>) {
+                    const letterbox = wrapper.querySelector<HTMLElement>('.painlessPeek-filter');
+                    if (!letterbox) return;
+                    for (const [optionName, optionValue] of Object.entries(options)) {
+                        if (optionName === 'enabled') {
+                            if (optionValue.value === true && !letterbox.classList.contains('letterbox')) {
+                                filterImpls.letterbox.add!(wrapper);
+                            } else if (optionValue.value !== true && letterbox.classList.contains('letterbox')) {
+                                filterImpls.letterbox.remove!(wrapper);
+                            }
+                        } else {
+                            letterbox.setAttribute('data-' + optionName, String(optionValue.value));
+                        }
+                    }
+                    if (letterbox.classList.contains('letterbox')) {
+                        applyLetterboxSize(letterbox);
+                    }
+                },
             },
         };
+
+        function applyLetterboxSize(letterbox: HTMLElement) {
+            const width = letterbox.getAttribute('data-width') ?? '5';
+            const height = letterbox.getAttribute('data-height') ?? '5';
+            letterbox.style.setProperty('--rect-width', width + '%');
+            letterbox.style.setProperty('--rect-height', height + '%');
+        }
 
         function moveLetterbox(e: MouseEvent, letterbox: HTMLElement, outer: HTMLElement) {
             const offset = outer.getBoundingClientRect();
@@ -76,9 +104,9 @@ export default defineContentScript({
         }
 
         function updateFilter(wrapper: HTMLElement, filterName: string, options: Record<string, FilterOption>) {
-            const filter = filters[filterName];
-            if (filter.update) {
-                filter.update(wrapper, options);
+            const impl = filterImpls[filterName];
+            if (impl.update) {
+                impl.update(wrapper, options);
                 return;
             }
             const filterDiv = wrapper.querySelector<HTMLElement>('.painlessPeek-filter');
@@ -92,37 +120,39 @@ export default defineContentScript({
                     }
                 } else {
                     filterDiv.setAttribute('data-' + optionName, String(optionValue.value));
+                    recomputeBackdropFilter(filterDiv, selectorFilters);
                 }
             }
         }
 
         function addFilter(wrapper: HTMLElement, filterName: string) {
-            const filter = filters[filterName];
+            const impl = filterImpls[filterName];
             const filterDiv = wrapper.querySelector<HTMLElement>('.painlessPeek-filter');
             if (!filterDiv) return;
-            if (filter.add) {
-                filter.add(wrapper);
+            if (impl.add) {
+                impl.add(wrapper);
             } else {
                 filterDiv.classList.add(filterName);
-                recomputeBackdropFilter(filterDiv);
+                recomputeBackdropFilter(filterDiv, selectorFilters);
             }
         }
 
         function removeFilter(wrapper: HTMLElement, filterName: string) {
-            const filter = filters[filterName];
+            const impl = filterImpls[filterName];
             const filterDiv = wrapper.querySelector<HTMLElement>('.painlessPeek-filter');
             if (!filterDiv) return;
-            if (filter.remove) {
-                filter.remove(wrapper);
+            if (impl.remove) {
+                impl.remove(wrapper);
             } else {
                 filterDiv.classList.remove(filterName);
-                recomputeBackdropFilter(filterDiv);
+                recomputeBackdropFilter(filterDiv, selectorFilters);
             }
         }
 
         let currentSelectors: Selector[] = [];
 
         function updateSelectors(newSelectors: Selector[]) {
+            selectorFilters = newSelectors.flatMap((s) => s.filters);
             newSelectors.forEach((selector) => updateSelector(selector));
             currentSelectors = newSelectors;
         }

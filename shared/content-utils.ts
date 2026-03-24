@@ -1,14 +1,22 @@
-export const backdropFilterValues: Record<string, string> = {
-    greyscale: 'grayscale(100%)',
-    blur: 'blur(20px)',
-    'hue-rotate': 'hue-rotate(90deg)',
-};
+import type { Filter } from './types';
 
-export function recomputeBackdropFilter(filterDiv: HTMLElement): void {
-    const active = Object.keys(backdropFilterValues)
-        .filter((name) => filterDiv.classList.contains(name))
-        .map((name) => backdropFilterValues[name]);
+export function recomputeBackdropFilter(filterDiv: HTMLElement, filters: Filter[]): void {
+    const active = filters
+        .filter((f) => !f.peek && filterDiv.classList.contains(f.name))
+        .map((f) => buildFilterString(f, filterDiv));
     filterDiv.style.backdropFilter = active.join(' ');
+}
+
+function buildFilterString(filter: Filter, filterDiv: HTMLElement): string {
+    if (!filter.filterString) return '';
+    let result = filter.filterString;
+    for (const [optName, opt] of Object.entries(filter.options)) {
+        if (optName === 'enabled') continue;
+        const val = filterDiv.getAttribute('data-' + optName) ?? String(opt.value);
+        const unit = opt.unit ?? '';
+        result = result.replace(optName, val + unit);
+    }
+    return result;
 }
 
 export function wrapElement(element: HTMLElement): HTMLElement {

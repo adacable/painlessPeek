@@ -4,12 +4,14 @@ export interface FilterOption {
   description?: string;
   max?: number;
   min?: number;
+  unit?: string;
 }
 
 export interface Filter {
   name: string;
   description?: string;
   peek: boolean;
+  filterString?: string;
   options: Record<string, FilterOption>;
 }
 

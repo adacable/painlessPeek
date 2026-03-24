@@ -1,9 +1,55 @@
 import { describe, expect, it, beforeEach } from 'vitest';
 import {
-  backdropFilterValues,
   recomputeBackdropFilter,
   wrapElement,
 } from '../shared/content-utils';
+import type { Filter } from '../shared/types';
+
+// ---------------------------------------------------------------------------
+// Test filter configs
+// ---------------------------------------------------------------------------
+
+const blurFilter: Filter = {
+  name: 'blur',
+  peek: false,
+  filterString: 'blur(radius)',
+  options: {
+    enabled: { value: false, type: 'checkbox' },
+    radius: { value: 20, type: 'range', min: 0, max: 50, unit: 'px' },
+  },
+};
+
+const greyscaleFilter: Filter = {
+  name: 'greyscale',
+  peek: false,
+  filterString: 'grayscale(percent)',
+  options: {
+    enabled: { value: false, type: 'checkbox' },
+    percent: { value: 100, type: 'range', min: 0, max: 100, unit: '%' },
+  },
+};
+
+const hueRotateFilter: Filter = {
+  name: 'hue-rotate',
+  peek: false,
+  filterString: 'hue-rotate(deg)',
+  options: {
+    enabled: { value: false, type: 'checkbox' },
+    deg: { value: 90, type: 'range', min: 0, max: 360, unit: 'deg' },
+  },
+};
+
+const letterboxFilter: Filter = {
+  name: 'letterbox',
+  peek: true,
+  options: {
+    enabled: { value: true, type: 'checkbox' },
+    width: { value: 5, type: 'range', min: 0, max: 50, unit: '%' },
+    height: { value: 5, type: 'range', min: 0, max: 50, unit: '%' },
+  },
+};
+
+const testFilters: Filter[] = [blurFilter, greyscaleFilter, hueRotateFilter, letterboxFilter];
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -30,7 +76,6 @@ function makeBgElement(bgImage: string): HTMLElement {
   return div;
 }
 
-// Attach element to DOM so parentNode is present for wrapElement
 function attachToBody(el: HTMLElement): void {
   document.body.appendChild(el);
 }
@@ -40,120 +85,241 @@ beforeEach(() => {
 });
 
 // ---------------------------------------------------------------------------
-// backdropFilterValues
+// recomputeBackdropFilter — no active filters
 // ---------------------------------------------------------------------------
 
-describe('backdropFilterValues', () => {
-  it('contains entries for greyscale, blur, and hue-rotate', () => {
-    expect(backdropFilterValues).toHaveProperty('greyscale');
-    expect(backdropFilterValues).toHaveProperty('blur');
-    expect(backdropFilterValues).toHaveProperty('hue-rotate');
-  });
-
-  it('greyscale value is a valid CSS grayscale filter', () => {
-    expect(backdropFilterValues['greyscale']).toMatch(/grayscale\(\d+%\)/);
-  });
-
-  it('blur value is a valid CSS blur filter', () => {
-    expect(backdropFilterValues['blur']).toMatch(/blur\(\d+px\)/);
-  });
-
-  it('hue-rotate value is a valid CSS hue-rotate filter', () => {
-    expect(backdropFilterValues['hue-rotate']).toMatch(/hue-rotate\(\d+deg\)/);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// recomputeBackdropFilter
-// ---------------------------------------------------------------------------
-
-describe('recomputeBackdropFilter', () => {
+describe('recomputeBackdropFilter with no active filters', () => {
   it('sets empty string when no filter classes are present', () => {
     const div = makeFilterDiv();
-    recomputeBackdropFilter(div);
+    recomputeBackdropFilter(div, testFilters);
     expect(div.style.backdropFilter).toBe('');
-  });
-
-  it('sets correct value for greyscale alone', () => {
-    const div = makeFilterDiv('greyscale');
-    recomputeBackdropFilter(div);
-    expect(div.style.backdropFilter).toBe(backdropFilterValues['greyscale']);
-  });
-
-  it('sets correct value for blur alone', () => {
-    const div = makeFilterDiv('blur');
-    recomputeBackdropFilter(div);
-    expect(div.style.backdropFilter).toBe(backdropFilterValues['blur']);
-  });
-
-  it('sets correct value for hue-rotate alone', () => {
-    const div = makeFilterDiv('hue-rotate');
-    recomputeBackdropFilter(div);
-    expect(div.style.backdropFilter).toBe(backdropFilterValues['hue-rotate']);
-  });
-
-  it('combines blur and greyscale', () => {
-    const div = makeFilterDiv('blur', 'greyscale');
-    recomputeBackdropFilter(div);
-    const result = div.style.backdropFilter;
-    expect(result).toContain(backdropFilterValues['blur']);
-    expect(result).toContain(backdropFilterValues['greyscale']);
-  });
-
-  it('combines all three filters', () => {
-    const div = makeFilterDiv('greyscale', 'blur', 'hue-rotate');
-    recomputeBackdropFilter(div);
-    const result = div.style.backdropFilter;
-    expect(result).toContain(backdropFilterValues['greyscale']);
-    expect(result).toContain(backdropFilterValues['blur']);
-    expect(result).toContain(backdropFilterValues['hue-rotate']);
-  });
-
-  it('order of combined filters matches backdropFilterValues key order, not class order', () => {
-    // Add classes in reverse order — result should still follow object key order
-    const div = makeFilterDiv('hue-rotate', 'blur', 'greyscale');
-    recomputeBackdropFilter(div);
-    const expected = [
-      backdropFilterValues['greyscale'],
-      backdropFilterValues['blur'],
-      backdropFilterValues['hue-rotate'],
-    ].join(' ');
-    expect(div.style.backdropFilter).toBe(expected);
   });
 
   it('ignores unknown class names', () => {
     const div = makeFilterDiv('letterbox', 'reveal', 'some-other-class');
-    recomputeBackdropFilter(div);
-    // None of these are in backdropFilterValues, so result should be empty
+    recomputeBackdropFilter(div, testFilters);
+    // peek filters and unknown classes are not in backdropFilter
     expect(div.style.backdropFilter).toBe('');
   });
 
-  it('updating after removing a class clears that filter', () => {
-    const div = makeFilterDiv('blur', 'greyscale');
-    recomputeBackdropFilter(div);
-    expect(div.style.backdropFilter).toContain(backdropFilterValues['blur']);
+  it('peek filters (letterbox, reveal) do not appear in backdropFilter', () => {
+    const div = makeFilterDiv('letterbox');
+    recomputeBackdropFilter(div, testFilters);
+    expect(div.style.backdropFilter).toBe('');
+  });
+});
 
-    div.classList.remove('blur');
-    recomputeBackdropFilter(div);
-    expect(div.style.backdropFilter).not.toContain(backdropFilterValues['blur']);
-    expect(div.style.backdropFilter).toContain(backdropFilterValues['greyscale']);
+// ---------------------------------------------------------------------------
+// recomputeBackdropFilter — single filters with default values
+// ---------------------------------------------------------------------------
+
+describe('recomputeBackdropFilter single filter, default values', () => {
+  it('blur uses default radius when no data attribute set', () => {
+    const div = makeFilterDiv('blur');
+    recomputeBackdropFilter(div, testFilters);
+    expect(div.style.backdropFilter).toBe('blur(20px)');
   });
 
-  it('updating after removing all classes yields empty string', () => {
+  it('greyscale uses default percent when no data attribute set', () => {
+    const div = makeFilterDiv('greyscale');
+    recomputeBackdropFilter(div, testFilters);
+    expect(div.style.backdropFilter).toBe('grayscale(100%)');
+  });
+
+  it('hue-rotate uses default deg when no data attribute set', () => {
+    const div = makeFilterDiv('hue-rotate');
+    recomputeBackdropFilter(div, testFilters);
+    expect(div.style.backdropFilter).toBe('hue-rotate(90deg)');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// recomputeBackdropFilter — single filters with data attribute overrides
+// ---------------------------------------------------------------------------
+
+describe('recomputeBackdropFilter single filter, data attribute values', () => {
+  it('blur reads radius from data-radius attribute', () => {
+    const div = makeFilterDiv('blur');
+    div.setAttribute('data-radius', '5');
+    recomputeBackdropFilter(div, testFilters);
+    expect(div.style.backdropFilter).toBe('blur(5px)');
+  });
+
+  it('blur with data-radius="0" produces blur(0px)', () => {
+    const div = makeFilterDiv('blur');
+    div.setAttribute('data-radius', '0');
+    recomputeBackdropFilter(div, testFilters);
+    expect(div.style.backdropFilter).toBe('blur(0px)');
+  });
+
+  it('blur with data-radius at max produces blur(50px)', () => {
+    const div = makeFilterDiv('blur');
+    div.setAttribute('data-radius', '50');
+    recomputeBackdropFilter(div, testFilters);
+    expect(div.style.backdropFilter).toBe('blur(50px)');
+  });
+
+  it('greyscale reads percent from data-percent attribute', () => {
+    const div = makeFilterDiv('greyscale');
+    div.setAttribute('data-percent', '50');
+    recomputeBackdropFilter(div, testFilters);
+    expect(div.style.backdropFilter).toBe('grayscale(50%)');
+  });
+
+  it('greyscale with data-percent="0" produces grayscale(0%)', () => {
+    const div = makeFilterDiv('greyscale');
+    div.setAttribute('data-percent', '0');
+    recomputeBackdropFilter(div, testFilters);
+    expect(div.style.backdropFilter).toBe('grayscale(0%)');
+  });
+
+  it('hue-rotate reads deg from data-deg attribute', () => {
+    const div = makeFilterDiv('hue-rotate');
+    div.setAttribute('data-deg', '180');
+    recomputeBackdropFilter(div, testFilters);
+    expect(div.style.backdropFilter).toBe('hue-rotate(180deg)');
+  });
+
+  it('hue-rotate with data-deg="0" produces hue-rotate(0deg)', () => {
+    const div = makeFilterDiv('hue-rotate');
+    div.setAttribute('data-deg', '0');
+    recomputeBackdropFilter(div, testFilters);
+    expect(div.style.backdropFilter).toBe('hue-rotate(0deg)');
+  });
+
+  it('hue-rotate with data-deg="360" produces hue-rotate(360deg)', () => {
+    const div = makeFilterDiv('hue-rotate');
+    div.setAttribute('data-deg', '360');
+    recomputeBackdropFilter(div, testFilters);
+    expect(div.style.backdropFilter).toBe('hue-rotate(360deg)');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// recomputeBackdropFilter — multiple active filters
+// ---------------------------------------------------------------------------
+
+describe('recomputeBackdropFilter multiple active filters', () => {
+  it('combines blur and greyscale with default values', () => {
     const div = makeFilterDiv('blur', 'greyscale');
-    recomputeBackdropFilter(div);
+    recomputeBackdropFilter(div, testFilters);
+    expect(div.style.backdropFilter).toContain('blur(20px)');
+    expect(div.style.backdropFilter).toContain('grayscale(100%)');
+  });
+
+  it('combines blur and greyscale with data attribute values', () => {
+    const div = makeFilterDiv('blur', 'greyscale');
+    div.setAttribute('data-radius', '10');
+    div.setAttribute('data-percent', '75');
+    recomputeBackdropFilter(div, testFilters);
+    expect(div.style.backdropFilter).toContain('blur(10px)');
+    expect(div.style.backdropFilter).toContain('grayscale(75%)');
+  });
+
+  it('combines all three backdrop filters', () => {
+    const div = makeFilterDiv('blur', 'greyscale', 'hue-rotate');
+    div.setAttribute('data-radius', '5');
+    div.setAttribute('data-percent', '80');
+    div.setAttribute('data-deg', '270');
+    recomputeBackdropFilter(div, testFilters);
+    expect(div.style.backdropFilter).toContain('blur(5px)');
+    expect(div.style.backdropFilter).toContain('grayscale(80%)');
+    expect(div.style.backdropFilter).toContain('hue-rotate(270deg)');
+  });
+
+  it('each filter uses its own data attribute independently', () => {
+    const div = makeFilterDiv('blur', 'greyscale');
+    div.setAttribute('data-radius', '15');
+    // no data-percent set — greyscale should use default (100%)
+    recomputeBackdropFilter(div, testFilters);
+    expect(div.style.backdropFilter).toContain('blur(15px)');
+    expect(div.style.backdropFilter).toContain('grayscale(100%)');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// recomputeBackdropFilter — dynamic updates
+// ---------------------------------------------------------------------------
+
+describe('recomputeBackdropFilter dynamic updates', () => {
+  it('updating data attribute then recomputing changes the result', () => {
+    const div = makeFilterDiv('blur');
+    div.setAttribute('data-radius', '10');
+    recomputeBackdropFilter(div, testFilters);
+    expect(div.style.backdropFilter).toBe('blur(10px)');
+
+    div.setAttribute('data-radius', '30');
+    recomputeBackdropFilter(div, testFilters);
+    expect(div.style.backdropFilter).toBe('blur(30px)');
+  });
+
+  it('adding a class and recomputing adds that filter to backdropFilter', () => {
+    const div = makeFilterDiv('blur');
+    recomputeBackdropFilter(div, testFilters);
+    expect(div.style.backdropFilter).not.toContain('grayscale');
+
+    div.classList.add('greyscale');
+    recomputeBackdropFilter(div, testFilters);
+    expect(div.style.backdropFilter).toContain('grayscale(100%)');
+  });
+
+  it('removing a class and recomputing removes that filter from backdropFilter', () => {
+    const div = makeFilterDiv('blur', 'greyscale');
+    recomputeBackdropFilter(div, testFilters);
+    expect(div.style.backdropFilter).toContain('blur(20px)');
+
+    div.classList.remove('blur');
+    recomputeBackdropFilter(div, testFilters);
+    expect(div.style.backdropFilter).not.toContain('blur');
+    expect(div.style.backdropFilter).toContain('grayscale(100%)');
+  });
+
+  it('removing all classes yields empty backdropFilter', () => {
+    const div = makeFilterDiv('blur', 'greyscale');
+    recomputeBackdropFilter(div, testFilters);
     div.classList.remove('blur');
     div.classList.remove('greyscale');
-    recomputeBackdropFilter(div);
+    recomputeBackdropFilter(div, testFilters);
     expect(div.style.backdropFilter).toBe('');
   });
 
-  it('is idempotent — calling twice gives the same result', () => {
-    const div = makeFilterDiv('blur', 'greyscale');
-    recomputeBackdropFilter(div);
+  it('is idempotent — calling twice with same state gives same result', () => {
+    const div = makeFilterDiv('blur');
+    div.setAttribute('data-radius', '15');
+    recomputeBackdropFilter(div, testFilters);
     const first = div.style.backdropFilter;
-    recomputeBackdropFilter(div);
+    recomputeBackdropFilter(div, testFilters);
     expect(div.style.backdropFilter).toBe(first);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Letterbox CSS custom properties
+// ---------------------------------------------------------------------------
+
+describe('letterbox CSS custom property updates', () => {
+  it('wrapElement creates a filter div with no custom properties set initially', () => {
+    const img = makeImg('http://example.com/photo.jpg');
+    attachToBody(img);
+    const wrapper = wrapElement(img);
+    const filterDiv = wrapper.querySelector<HTMLElement>('.painlessPeek-filter')!;
+    expect(filterDiv.style.getPropertyValue('--rect-width')).toBe('');
+    expect(filterDiv.style.getPropertyValue('--rect-height')).toBe('');
+  });
+
+  it('setting data-width and data-height on the filter div allows JS to apply them as CSS vars', () => {
+    // This tests the convention: data-width/height are set by updateFilter,
+    // and the letterbox add() function should apply them as --rect-width/--rect-height
+    const div = makeFilterDiv('painlessPeek-filter');
+    div.setAttribute('data-width', '10');
+    div.setAttribute('data-height', '15');
+
+    // Simulate what letterbox add() should do
+    div.style.setProperty('--rect-width', div.getAttribute('data-width') + '%');
+    div.style.setProperty('--rect-height', div.getAttribute('data-height') + '%');
+
+    expect(div.style.getPropertyValue('--rect-width')).toBe('10%');
+    expect(div.style.getPropertyValue('--rect-height')).toBe('15%');
   });
 });
 
@@ -187,8 +353,7 @@ describe('wrapElement (img)', () => {
     const img = makeImg('http://example.com/photo.jpg');
     attachToBody(img);
     const wrapper = wrapElement(img);
-    const innerImg = wrapper.querySelector('.painlessPeek-filter-image');
-    expect(innerImg).not.toBeNull();
+    expect(wrapper.querySelector('.painlessPeek-filter-image')).not.toBeNull();
   });
 
   it('inner img src matches original img src', () => {
@@ -229,8 +394,8 @@ describe('wrapElement (img)', () => {
   });
 
   it('copies alt attribute from original img to wrapper div', () => {
-    // This documents current behaviour — alt on a div is semantically wrong,
-    // but the current implementation copies ALL attributes
+    // Documents current behaviour — alt on a div is semantically incorrect,
+    // but the implementation copies ALL attributes
     const img = makeImg('http://example.com/photo.jpg', { alt: 'a photo' });
     attachToBody(img);
     const wrapper = wrapElement(img);
@@ -250,22 +415,20 @@ describe('wrapElement (img)', () => {
     attachToBody(img);
     const wrapper = wrapElement(img);
     const innerImg = wrapper.querySelector<HTMLImageElement>('.painlessPeek-filter-image');
-    // jsdom resolves relative URLs against the document base
     expect(innerImg?.src).toContain('photo.jpg');
   });
 
-  it('does not create nested wrappers when called twice on already-replaced img', () => {
+  it('does not throw when called on a detached element', () => {
     const img = makeImg('http://example.com/photo.jpg');
     attachToBody(img);
     wrapElement(img);
-    // At this point `img` is detached. Calling wrapElement again on it has no parent,
-    // so parentNode?.replaceChild is a no-op — the second call should not throw.
+    // img is now detached — second call should not throw
     expect(() => wrapElement(img)).not.toThrow();
   });
 });
 
 // ---------------------------------------------------------------------------
-// wrapElement — background-image elements (URL format variants)
+// wrapElement — background-image URL format variants
 // ---------------------------------------------------------------------------
 
 describe('wrapElement (background-image)', () => {
@@ -285,20 +448,17 @@ describe('wrapElement (background-image)', () => {
     expect(innerImg?.src).toBe('http://example.com/photo.jpg');
   });
 
-  it('parses single-quoted url(\'...\') format correctly', () => {
-    // This is a known edge case: the code only checks for url(" (double-quote)
-    // Single-quoted URLs hit the else branch: slice(4, -1) leaves a leading single-quote
+  it("parses single-quoted url('...') format correctly", () => {
+    // The code only checks for url(" (double-quote); single-quote hits the else
+    // branch. This test will catch if single-quote parsing is broken.
     const div = makeBgElement("url('http://example.com/photo.jpg')");
     attachToBody(div);
     const wrapper = wrapElement(div);
     const innerImg = wrapper.querySelector<HTMLImageElement>('.painlessPeek-filter-image');
-    // If this test fails, single-quote URL parsing is broken
     expect(innerImg?.src).toBe('http://example.com/photo.jpg');
   });
 
   it('inner img src is empty when no image source is found', () => {
-    // img.src is only set when imgSrc is non-empty — avoids an unintended
-    // request to the page URL that browsers make when src is set to ''.
     const div = document.createElement('div');
     attachToBody(div);
     const wrapper = wrapElement(div);
@@ -327,7 +487,6 @@ describe('wrapElement (background-image)', () => {
 
 describe('defaultFilters mutation hazards', () => {
   it('importing defaultFilters twice returns the same object reference', async () => {
-    // Both imports should be the same module instance
     const { defaultFilters: a } = await import('../shared/config');
     const { defaultFilters: b } = await import('../shared/config');
     expect(a).toBe(b);
@@ -337,12 +496,8 @@ describe('defaultFilters mutation hazards', () => {
     const { defaultFilters } = await import('../shared/config');
     const original = defaultFilters[0].options.enabled.value;
 
-    // Simulate what initialiseSelectors does: assign the same array to a selector,
-    // then what popup does: mutate the option value
     defaultFilters[0].options.enabled.value = !original;
-
     const { defaultFilters: reImported } = await import('../shared/config');
-    // The mutation persists because ES module instances are singletons
     expect(reImported[0].options.enabled.value).toBe(!original);
 
     // Restore
@@ -355,10 +510,11 @@ describe('defaultFilters mutation hazards', () => {
       { name: 'Images', selector: 'img', url: '*', filters: [] as typeof defaultFilters },
       { name: 'Divs', selector: 'div', url: '*', filters: [] as typeof defaultFilters },
     ];
-    // Replicate what initialiseSelectors does
-    selectors.forEach((s) => { s.filters = defaultFilters; });
+    selectors.forEach((s) => {
+      s.filters = defaultFilters;
+    });
 
-    // Both selectors share the same reference — mutating one affects the other
+    // Mutating one selector's filter affects both — shared reference
     selectors[0].filters[0].options.enabled.value = true;
     expect(selectors[1].filters[0].options.enabled.value).toBe(true);
 
@@ -372,16 +528,29 @@ describe('defaultFilters mutation hazards', () => {
 // ---------------------------------------------------------------------------
 
 describe('wrapElement + recomputeBackdropFilter integration', () => {
-  it('adding a filter class and recomputing applies backdropFilter', () => {
+  it('adding a filter class and recomputing applies the correct backdropFilter string', () => {
     const img = makeImg('http://example.com/photo.jpg');
     attachToBody(img);
     const wrapper = wrapElement(img);
     const filterDiv = wrapper.querySelector<HTMLElement>('.painlessPeek-filter')!;
 
     filterDiv.classList.add('blur');
-    recomputeBackdropFilter(filterDiv);
+    recomputeBackdropFilter(filterDiv, testFilters);
 
-    expect(filterDiv.style.backdropFilter).toBe(backdropFilterValues['blur']);
+    expect(filterDiv.style.backdropFilter).toBe('blur(20px)');
+  });
+
+  it('slider value flows through data attribute to backdropFilter string', () => {
+    const img = makeImg('http://example.com/photo.jpg');
+    attachToBody(img);
+    const wrapper = wrapElement(img);
+    const filterDiv = wrapper.querySelector<HTMLElement>('.painlessPeek-filter')!;
+
+    filterDiv.classList.add('blur');
+    filterDiv.setAttribute('data-radius', '7');
+    recomputeBackdropFilter(filterDiv, testFilters);
+
+    expect(filterDiv.style.backdropFilter).toBe('blur(7px)');
   });
 
   it('enabling then disabling a filter leaves backdropFilter empty', () => {
@@ -391,9 +560,9 @@ describe('wrapElement + recomputeBackdropFilter integration', () => {
     const filterDiv = wrapper.querySelector<HTMLElement>('.painlessPeek-filter')!;
 
     filterDiv.classList.add('greyscale');
-    recomputeBackdropFilter(filterDiv);
+    recomputeBackdropFilter(filterDiv, testFilters);
     filterDiv.classList.remove('greyscale');
-    recomputeBackdropFilter(filterDiv);
+    recomputeBackdropFilter(filterDiv, testFilters);
 
     expect(filterDiv.style.backdropFilter).toBe('');
   });
@@ -411,9 +580,9 @@ describe('wrapElement + recomputeBackdropFilter integration', () => {
     const filter2 = wrapper2.querySelector<HTMLElement>('.painlessPeek-filter')!;
 
     filter1.classList.add('blur');
-    recomputeBackdropFilter(filter1);
+    filter1.setAttribute('data-radius', '10');
+    recomputeBackdropFilter(filter1, testFilters);
 
-    // filter2 should be unaffected
     expect(filter2.style.backdropFilter).toBe('');
   });
 });
