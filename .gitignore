@@ -15,3 +15,8 @@ painlessPeek/crash.log
 painlessPeek/crash.log
 painlessPeek/output/.DS_Store
 painlessPeek/tmp/*
+node_modules/
+.wxt/
+.output/
+dist/
+output/
