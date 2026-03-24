@@ -1,4 +1,6 @@
-import type { Filter, FilterImpl, FilterOption, Selector } from '../shared/types';
+import type { FilterImpl, FilterState, SelectorState } from '../shared/types';
+import { defaultFilters } from '../shared/config';
+import { mergeFilterStates } from '../shared/state';
 import { recomputeBackdropFilter, wrapElement } from '../shared/content-utils';
 import './content-styles.css';
 
@@ -16,8 +18,6 @@ export default defineContentScript({
             const bg = Array.from(document.querySelectorAll<HTMLElement>("[style*='background-image']"));
             return [...standard, ...bg];
         }
-
-        let selectorFilters: Filter[] = [];
 
         const filterImpls: Record<string, FilterImpl> = {
             greyscale: {},
@@ -52,23 +52,17 @@ export default defineContentScript({
                         letterboxHandlers.delete(wrapper);
                     }
                 },
-                update(wrapper: HTMLElement, options: Record<string, FilterOption>) {
+                update(wrapper: HTMLElement, state: FilterState) {
                     const letterbox = wrapper.querySelector<HTMLElement>('.painlessPeek-filter');
                     if (!letterbox) return;
-                    for (const [optionName, optionValue] of Object.entries(options)) {
-                        if (optionName === 'enabled') {
-                            if (optionValue.value === true && !letterbox.classList.contains('letterbox')) {
-                                filterImpls.letterbox.add!(wrapper);
-                            } else if (optionValue.value !== true && letterbox.classList.contains('letterbox')) {
-                                filterImpls.letterbox.remove!(wrapper);
-                            }
-                        } else {
-                            letterbox.setAttribute('data-' + optionName, String(optionValue.value));
-                        }
+                    if (state.enabled && !letterbox.classList.contains('letterbox')) {
+                        filterImpls.letterbox.add!(wrapper);
+                    } else if (!state.enabled && letterbox.classList.contains('letterbox')) {
+                        filterImpls.letterbox.remove!(wrapper);
                     }
-                    if (letterbox.classList.contains('letterbox')) {
-                        applyLetterboxSize(letterbox);
-                    }
+                    if (typeof state.width === 'number') letterbox.setAttribute('data-width', String(state.width));
+                    if (typeof state.height === 'number') letterbox.setAttribute('data-height', String(state.height));
+                    if (letterbox.classList.contains('letterbox')) applyLetterboxSize(letterbox);
                 },
             },
         };
@@ -88,7 +82,8 @@ export default defineContentScript({
             letterbox.style.top = ypos + 'px';
         }
 
-        function updateSelector(selector: Selector) {
+        function updateSelector(selectorState: SelectorState) {
+            const filterStates = mergeFilterStates(defaultFilters, selectorState.filterStates);
             const elements = getImages();
             const wrappers: HTMLElement[] = elements.map((element) => {
                 if (element.classList.contains('painlessPeek-filter-image')) {
@@ -97,32 +92,32 @@ export default defineContentScript({
                 return wrapElement(element);
             });
             wrappers.forEach((wrapper) => {
-                selector.filters.forEach((filterOpts) => {
-                    updateFilter(wrapper, filterOpts.name, filterOpts.options);
+                defaultFilters.forEach((filter) => {
+                    updateFilter(wrapper, filter.name, filterStates[filter.name]);
                 });
             });
         }
 
-        function updateFilter(wrapper: HTMLElement, filterName: string, options: Record<string, FilterOption>) {
+        function updateFilter(wrapper: HTMLElement, filterName: string, state: FilterState) {
             const impl = filterImpls[filterName];
             if (impl.update) {
-                impl.update(wrapper, options);
+                impl.update(wrapper, state);
                 return;
             }
             const filterDiv = wrapper.querySelector<HTMLElement>('.painlessPeek-filter');
             if (!filterDiv) return;
-            for (const [optionName, optionValue] of Object.entries(options)) {
-                if (optionName === 'enabled') {
-                    if (optionValue.value === true && !filterDiv.classList.contains(filterName)) {
-                        addFilter(wrapper, filterName);
-                    } else if (optionValue.value !== true && filterDiv.classList.contains(filterName)) {
-                        removeFilter(wrapper, filterName);
-                    }
-                } else {
-                    filterDiv.setAttribute('data-' + optionName, String(optionValue.value));
-                    recomputeBackdropFilter(filterDiv, selectorFilters);
-                }
+
+            if (state.enabled && !filterDiv.classList.contains(filterName)) {
+                addFilter(wrapper, filterName);
+            } else if (!state.enabled && filterDiv.classList.contains(filterName)) {
+                removeFilter(wrapper, filterName);
             }
+
+            for (const [key, value] of Object.entries(state)) {
+                if (key === 'enabled') continue;
+                filterDiv.setAttribute('data-' + key, String(value));
+            }
+            recomputeBackdropFilter(filterDiv, defaultFilters);
         }
 
         function addFilter(wrapper: HTMLElement, filterName: string) {
@@ -133,7 +128,7 @@ export default defineContentScript({
                 impl.add(wrapper);
             } else {
                 filterDiv.classList.add(filterName);
-                recomputeBackdropFilter(filterDiv, selectorFilters);
+                recomputeBackdropFilter(filterDiv, defaultFilters);
             }
         }
 
@@ -145,21 +140,20 @@ export default defineContentScript({
                 impl.remove(wrapper);
             } else {
                 filterDiv.classList.remove(filterName);
-                recomputeBackdropFilter(filterDiv, selectorFilters);
+                recomputeBackdropFilter(filterDiv, defaultFilters);
             }
         }
 
-        let currentSelectors: Selector[] = [];
+        let currentSelectorStates: SelectorState[] = [];
 
-        function updateSelectors(newSelectors: Selector[]) {
-            selectorFilters = newSelectors.flatMap((s) => s.filters);
-            newSelectors.forEach((selector) => updateSelector(selector));
-            currentSelectors = newSelectors;
+        function updateSelectors(selectorStates: SelectorState[]) {
+            selectorStates.forEach((s) => updateSelector(s));
+            currentSelectorStates = selectorStates;
         }
 
         chrome.storage.onChanged.addListener((changes) => {
             if (changes.selectors) {
-                updateSelectors(changes.selectors.newValue as Selector[]);
+                updateSelectors(changes.selectors.newValue as SelectorState[]);
             }
         });
 
@@ -167,18 +161,15 @@ export default defineContentScript({
             const observer = new MutationObserver((mutations) => {
                 const hasNewNodes = mutations.some((m) => m.addedNodes.length > 0);
                 if (hasNewNodes) {
-                    updateSelectors(currentSelectors);
+                    updateSelectors(currentSelectorStates);
                 }
             });
-            observer.observe(document, {
-                childList: true,
-                subtree: true,
-            });
+            observer.observe(document, { childList: true, subtree: true });
         }
 
         chrome.storage.sync.get('selectors').then((result) => {
-            const selectors = result.selectors as Selector[];
-            updateSelectors(selectors);
+            const selectorStates = (result.selectors as SelectorState[] | undefined) ?? [];
+            updateSelectors(selectorStates);
             watchDom();
         });
     },

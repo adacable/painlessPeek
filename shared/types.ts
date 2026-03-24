@@ -19,11 +19,20 @@ export interface Selector {
   name: string;
   selector: string;
   url: string;
-  filters: Filter[];
+}
+
+export interface FilterState {
+  enabled: boolean;
+  [optionName: string]: boolean | number;
+}
+
+export interface SelectorState {
+  name: string;
+  filterStates: Record<string, FilterState>;
 }
 
 export interface FilterImpl {
   add?: (wrapper: HTMLElement) => void;
   remove?: (wrapper: HTMLElement) => void;
-  update?: (wrapper: HTMLElement, options: Record<string, FilterOption>) => void;
+  update?: (wrapper: HTMLElement, state: FilterState) => void;
 }

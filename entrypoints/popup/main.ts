@@ -1,115 +1,118 @@
 import { defaultFilters, defaultSelectors } from '../../shared/config';
-import type { Filter, FilterOption, Selector } from '../../shared/types';
+import { defaultFilterStates, mergeFilterStates, mergeSelectorStates, stateToStorage } from '../../shared/state';
+import type { Filter, FilterState, SelectorState } from '../../shared/types';
 
-function initialiseSelectors(selectors: Selector[], filters: Filter[]): Selector[] {
-    selectors.forEach(function(selector) {
-        selector.filters = filters;
-    });
-    chrome.storage.sync.set({ selectors }).then(function() {});
-    return selectors;
+function initialise(): SelectorState[] {
+    const states = defaultFilterStates(defaultFilters);
+    const selectorStates = defaultSelectors.map((s) => stateToStorage(s.name, states));
+    chrome.storage.sync.set({ selectors: selectorStates });
+    return selectorStates;
 }
 
-function resetSelectors(): Selector[] {
-    return initialiseSelectors(defaultSelectors, defaultFilters);
-}
-
-function makeUI(selectors: Selector[]) {
-    const selectordiv = document.getElementById("selectors");
-    if (!selectordiv) return;
-    selectors.forEach((selector) => {
-        const appendDiv = makeSelectorDiv(selector);
-        selectordiv.appendChild(appendDiv);
+function makeUI(selectorStates: SelectorState[]) {
+    const container = document.getElementById('selectors');
+    if (!container) return;
+    selectorStates.forEach((selectorState) => {
+        const merged = mergeFilterStates(defaultFilters, selectorState.filterStates);
+        container.appendChild(makeSelectorDiv(selectorState.name, merged));
     });
 }
 
-function makeSelectorDiv(selector: Selector): HTMLElement {
-    const div = document.createElement("div");
-    div.id = selector.name;
-    div.className = "selector";
-    const name = document.createElement("h2");
-    name.textContent = selector.name;
-    div.appendChild(name);
-    return addFilters(selector.filters, selector, div);
-}
+function makeSelectorDiv(name: string, filterStates: Record<string, FilterState>): HTMLElement {
+    const div = document.createElement('div');
+    div.id = name;
+    div.className = 'selector';
+    const h2 = document.createElement('h2');
+    h2.textContent = name;
+    div.appendChild(h2);
 
-function addFilters(filters: Filter[], selector: Selector, selectordiv: HTMLElement): HTMLElement {
-    const peeks = filters.filter((f) => f.peek);
-    const cosmeticFilters = filters.filter((f) => !f.peek);
-    selectordiv.appendChild(makePeekSel(peeks));
-    cosmeticFilters.forEach((filter) => {
-        selectordiv.appendChild(makeFilterDiv(filter));
+    const peeks = defaultFilters.filter((f) => f.peek);
+    const cosmetic = defaultFilters.filter((f) => !f.peek);
+
+    div.appendChild(makePeekSel(peeks, filterStates, name));
+    cosmetic.forEach((filter) => {
+        div.appendChild(makeFilterForm(filter, filterStates[filter.name], name));
     });
-    return selectordiv;
+
+    return div;
 }
 
-function makePeekSel(peeks: Filter[]): HTMLSelectElement {
-    const peeksSelector = document.createElement("select");
-    peeksSelector.className = "peeks";
-    peeks.forEach((peek) => {
-        const peekOpt = document.createElement("option");
-        peekOpt.textContent = peek.name;
-        if (peek.options.enabled.value) {
-            peekOpt.selected = true;
-        }
-        peeksSelector.appendChild(peekOpt);
+function makePeekSel(
+    peeks: Filter[],
+    filterStates: Record<string, FilterState>,
+    selectorName: string
+): HTMLSelectElement {
+    const select = document.createElement('select');
+    select.className = 'peeks';
+    peeks.forEach((f) => {
+        const opt = document.createElement('option');
+        opt.textContent = f.name;
+        opt.value = f.name;
+        if (filterStates[f.name]?.enabled) opt.selected = true;
+        select.appendChild(opt);
     });
-    peeksSelector.addEventListener("change", updatePeeks);
-    return peeksSelector;
+    select.addEventListener('change', () => updatePeek(selectorName, peeks, select.value));
+    return select;
 }
 
-function updatePeeks(e: Event) {
-    const target = e.target as HTMLSelectElement;
-    chrome.storage.sync.get("selectors", function(data: { selectors: Selector[] }) {
+function updatePeek(selectorName: string, peeks: Filter[], enabledName: string) {
+    chrome.storage.sync.get('selectors', (data: { selectors: SelectorState[] }) => {
         const sels = data.selectors;
-        const thisSelID = target.parentElement?.id;
-        const thisSel = sels.find((sel) => sel.name === thisSelID);
-        if (!thisSel) return;
-        const selIndex = sels.indexOf(thisSel);
-        const peekEnabled = target.value;
-        thisSel.filters.filter((f) => f.peek).forEach((peek) => {
-            const filterIndex = thisSel.filters.indexOf(peek);
-            peek.options.enabled.value = peek.name === peekEnabled;
-            thisSel.filters[filterIndex] = peek;
+        const sel = sels.find((s) => s.name === selectorName);
+        if (!sel) return;
+        peeks.forEach((f) => {
+            sel.filterStates[f.name] = { ...sel.filterStates[f.name], enabled: f.name === enabledName };
         });
-        sels[selIndex] = thisSel;
-        chrome.storage.sync.set({ selectors: sels }).then(function() {});
+        chrome.storage.sync.set({ selectors: sels });
     });
 }
 
-function makeFilterDiv(filter: Filter): HTMLFormElement {
-    const form = document.createElement("form");
-    form.className = "filter";
+function makeFilterForm(filter: Filter, state: FilterState, selectorName: string): HTMLFormElement {
+    const form = document.createElement('form');
+    form.className = 'filter';
     form.id = filter.name;
-    const header = document.createElement("h3");
-    header.textContent = filter.name;
-    form.appendChild(header);
-    for (const key in filter.options) {
-        form.appendChild(makeOptionDiv(filter.options[key], key));
+    const h3 = document.createElement('h3');
+    h3.textContent = filter.name;
+    form.appendChild(h3);
+    for (const [optionName, opt] of Object.entries(filter.options)) {
+        form.appendChild(makeOptionDiv(optionName, opt.type, state[optionName], opt, filter.name, selectorName));
     }
     return form;
 }
 
-function makeOptionDiv(option: FilterOption, optionName: string): HTMLDivElement {
-    const div = document.createElement("div");
-    div.className = "option";
+function makeOptionDiv(
+    optionName: string,
+    type: 'checkbox' | 'range',
+    value: boolean | number,
+    opt: Filter['options'][string],
+    filterName: string,
+    selectorName: string
+): HTMLDivElement {
+    const div = document.createElement('div');
+    div.className = 'option';
     div.classList.add(optionName);
 
-    const input = document.createElement("input");
-    input.type = option.type;
+    const input = document.createElement('input');
+    input.type = type;
     input.name = optionName;
-    input.className = "option";
-    if (input.type === "checkbox") {
-        input.checked = option.value as boolean;
+    input.className = 'option';
+
+    if (type === 'checkbox') {
+        input.checked = value as boolean;
+    } else {
+        input.min = String(opt.min);
+        input.max = String(opt.max);
+        input.value = String(value);
     }
-    if (input.type === "range") {
-        input.max = String(option.max);
-        input.min = String(option.min);
-        input.value = String(option.value);
-    }
-    input.addEventListener("change", updateFilters);
+
+    input.addEventListener('change', () => {
+        const newValue = type === 'checkbox' ? input.checked : Number(input.value);
+        updateOption(selectorName, filterName, optionName, newValue);
+    });
+
     div.appendChild(input);
 
-    const label = document.createElement("label");
+    const label = document.createElement('label');
     label.textContent = optionName;
     label.classList.add(optionName);
     label.htmlFor = optionName;
@@ -118,40 +121,32 @@ function makeOptionDiv(option: FilterOption, optionName: string): HTMLDivElement
     return div;
 }
 
-function updateFilters(e: Event) {
-    const target = e.target as HTMLInputElement;
-    chrome.storage.sync.get("selectors", function(data: { selectors: Selector[] }) {
+function updateOption(
+    selectorName: string,
+    filterName: string,
+    optionName: string,
+    value: boolean | number
+) {
+    chrome.storage.sync.get('selectors', (data: { selectors: SelectorState[] }) => {
         const sels = data.selectors;
-        const thisSelID = target.parentElement?.parentElement?.parentElement?.id;
-        const thisSel = sels.find((sel) => sel.name === thisSelID);
-        if (!thisSel) return;
-        const selIndex = sels.indexOf(thisSel);
-        const thisFilterID = target.parentElement?.parentElement?.id;
-        const thisFilter = thisSel.filters.find((f) => f.name === thisFilterID);
-        if (!thisFilter) return;
-        const filterIndex = thisSel.filters.indexOf(thisFilter);
-        const thisOption = thisFilter.options[target.name];
-        if (thisOption.type === "checkbox") {
-            thisOption.value = target.checked;
-        }
-        if (thisOption.type === "range") {
-            thisOption.value = Number(target.value);
-        }
-        thisFilter.options[target.name] = thisOption;
-        thisSel.filters[filterIndex] = thisFilter;
-        sels[selIndex] = thisSel;
-        chrome.storage.sync.set({ selectors: sels }).then(function() {});
+        const sel = sels.find((s) => s.name === selectorName);
+        if (!sel) return;
+        const existing = sel.filterStates[filterName] ?? defaultFilterStates(defaultFilters)[filterName];
+        sel.filterStates[filterName] = { ...existing, [optionName]: value };
+        chrome.storage.sync.set({ selectors: sels });
     });
 }
 
-function checkSelsLoaded(result: { selectors?: Selector[] }): Selector[] {
-    if (!result.selectors) {
-        return resetSelectors();
-    }
-    return result.selectors;
+function isValidSelectorState(s: unknown): s is SelectorState {
+    return typeof s === 'object' && s !== null && 'filterStates' in s;
+}
+
+function checkSelsLoaded(result: { selectors?: unknown[] }): SelectorState[] {
+    if (!result.selectors || !result.selectors.every(isValidSelectorState)) return initialise();
+    return mergeSelectorStates(result.selectors, defaultFilters);
 }
 
 chrome.storage.sync.get('selectors').then((result) => {
-    const sels = checkSelsLoaded(result as { selectors?: Selector[] });
-    makeUI(sels);
+    const selectorStates = checkSelsLoaded(result as { selectors?: SelectorState[] });
+    makeUI(selectorStates);
 });

@@ -50,5 +50,5 @@ export const defaultFilters: Filter[] = [
 ];
 
 export const defaultSelectors: Selector[] = [
-  { name: 'Images', selector: 'img', url: '*', filters: [] },
+  { name: 'Images', selector: 'img', url: '*' },
 ];
